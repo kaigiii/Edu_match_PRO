@@ -10,7 +10,7 @@ import {
   HeartIcon,
   StarIcon
 } from '@heroicons/react/24/outline';
-import useFetch from '../hooks/useFetch';
+import { useApi } from '../hooks/useApi';
 import NeedCard from '../components/NeedCard';
 import type { SchoolNeed } from '../types';
 
@@ -49,10 +49,10 @@ interface ImpactStory {
 const CompanyDashboardPage = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'impact' | 'analytics'>('overview');
   
-  const { data: stats, isLoading, error } = useFetch<CompanyDashboardStats>('http://localhost:3001/company_dashboard_stats');
-  const { data: recommendedNeeds, isLoading: recommendationsLoading, error: recommendationsError } = useFetch<SchoolNeed[]>('http://localhost:3001/ai_recommended_needs');
-  const { data: recentProjects, isLoading: projectsLoading } = useFetch<RecentProject[]>('http://localhost:3001/recent_projects');
-  const { data: impactStories, isLoading: storiesLoading } = useFetch<ImpactStory[]>('http://localhost:3001/impact_stories');
+  const { data: stats, isLoading, error, isUsingFallback: statsFallback } = useApi<CompanyDashboardStats>('http://localhost:3001/company_dashboard_stats');
+  const { data: recommendedNeeds, isLoading: recommendationsLoading, error: recommendationsError, isUsingFallback: recommendationsFallback } = useApi<SchoolNeed[]>('http://localhost:3001/ai_recommended_needs');
+  const { data: recentProjects, isLoading: projectsLoading, isUsingFallback: projectsFallback } = useApi<RecentProject[]>('http://localhost:3001/recent_projects');
+  const { data: impactStories, isLoading: storiesLoading, isUsingFallback: storiesFallback } = useApi<ImpactStory[]>('http://localhost:3001/impact_stories');
 
   if (isLoading) {
     return (

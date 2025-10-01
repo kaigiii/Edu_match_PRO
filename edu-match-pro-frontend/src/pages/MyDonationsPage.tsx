@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import useFetch from '../hooks/useFetch';
+import { useApi } from '../hooks/useApi';
 
 interface CompanyDonation {
   id: string;
@@ -12,7 +12,7 @@ interface CompanyDonation {
 }
 
 const MyDonationsPage = () => {
-  const { data: donations, isLoading, error } = useFetch<CompanyDonation[]>('http://localhost:3001/company_donations');
+  const { data: donations, isLoading, error, isUsingFallback } = useApi<CompanyDonation[]>('http://localhost:3001/company_donations');
 
   const getStatusBadge = (status: string) => {
     const statusClasses = {

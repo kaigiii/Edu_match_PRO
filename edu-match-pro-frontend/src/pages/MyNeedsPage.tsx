@@ -1,10 +1,10 @@
-import useFetch from '../hooks/useFetch';
+import { useApi } from '../hooks/useApi';
 import NeedCard from '../components/NeedCard';
 import { toast } from 'react-toastify';
 import type { SchoolNeed } from '../types';
 
 const MyNeedsPage = () => {
-  const { data: needs, isLoading, error, setData: setNeeds } = useFetch<SchoolNeed[]>('http://localhost:3001/school_needs');
+  const { data: needs, isLoading, error, updateData: setNeeds } = useApi<SchoolNeed[]>('http://localhost:3001/school_needs');
 
   const executeDelete = async (needId: string) => {
     try {

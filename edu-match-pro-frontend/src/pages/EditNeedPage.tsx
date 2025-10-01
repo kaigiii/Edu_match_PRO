@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import useFetch from '../hooks/useFetch';
+import { useApi } from '../hooks/useApi';
 import type { SchoolNeed } from '../types';
 
 interface FormData {
@@ -16,7 +16,7 @@ interface FormData {
 const EditNeedPage: React.FC = () => {
   const { needId } = useParams<{ needId: string }>();
   const navigate = useNavigate();
-  const { data: need, isLoading } = useFetch<SchoolNeed>(`http://localhost:3001/school_needs/${needId}`);
+  const { data: need, isLoading, error, isUsingFallback } = useApi<SchoolNeed>(`http://localhost:3001/school_needs/${needId}`);
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>();
 

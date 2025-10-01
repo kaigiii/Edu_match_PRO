@@ -10,7 +10,7 @@ import {
   EyeIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
-import useFetch from '../hooks/useFetch';
+import { useApi } from '../hooks/useApi';
 import NeedCard from '../components/NeedCard';
 import type { SchoolNeed } from '../types';
 
@@ -35,9 +35,9 @@ const SchoolDashboardPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'needs' | 'analytics'>('overview');
   
-  const { data: stats, isLoading: statsLoading, error: statsError } = useFetch<SchoolDashboardStats>('http://localhost:3001/school_dashboard_stats');
-  const { data: myNeeds, isLoading: needsLoading, error: needsError } = useFetch<SchoolNeed[]>('http://localhost:3001/my_needs');
-  const { data: recentActivity, isLoading: activityLoading } = useFetch<RecentActivity[]>('http://localhost:3001/recent_activity');
+  const { data: stats, isLoading: statsLoading, error: statsError, isUsingFallback: statsFallback } = useApi<SchoolDashboardStats>('http://localhost:3001/school_dashboard_stats');
+  const { data: myNeeds, isLoading: needsLoading, error: needsError, isUsingFallback: needsFallback } = useApi<SchoolNeed[]>('http://localhost:3001/my_needs');
+  const { data: recentActivity, isLoading: activityLoading, isUsingFallback: activityFallback } = useApi<RecentActivity[]>('http://localhost:3001/recent_activity');
 
   // 處理按鈕點擊事件
   const handleCreateNeed = () => {
