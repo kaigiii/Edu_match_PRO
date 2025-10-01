@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints import auth, needs, donations, dashboard, stories, activity, frontend_compat
+from app.api.main_api import router as main_router
+from app.api.auth_api import router as auth_router
 
 app = FastAPI(title="Edu-Match-Pro API", version="1.0.0")
 
@@ -20,16 +21,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 包含 API 路由
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(needs.router, prefix="/api/v1")
-app.include_router(donations.router, prefix="/api/v1")
-app.include_router(dashboard.router, prefix="/api/v1")
-app.include_router(stories.router, prefix="/api/v1")
-app.include_router(activity.router, prefix="/api/v1")
-
-# 前端兼容性路由 (直接掛載到根路徑)
-app.include_router(frontend_compat.router)
+# 包含 API 路由 (直接掛載到根路徑)
+app.include_router(main_router)
+app.include_router(auth_router)
 
 @app.get("/")
 async def root():
