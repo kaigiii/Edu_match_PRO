@@ -91,33 +91,30 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ## API 端點
 
 ### 認證 (Authentication)
-- `POST /api/v1/auth/register` - 使用者註冊
-- `POST /api/v1/auth/login` - 使用者登入
-- `GET /api/v1/auth/users/me` - 取得當前使用者資訊
+- `POST /auth/register` - 使用者註冊
+- `POST /auth/login` - 使用者登入
+- `GET /auth/users/me` - 取得當前使用者資訊
 
 ### 需求管理 (Needs)
-- `POST /api/v1/needs/` - 建立新需求（學校）
-- `GET /api/v1/needs/my` - 取得我的需求（學校）
-- `GET /api/v1/needs/` - 取得所有公開需求
-- `GET /api/v1/needs/{need_id}` - 取得單一需求
-- `PUT /api/v1/needs/{need_id}` - 更新需求
-- `DELETE /api/v1/needs/{need_id}` - 刪除需求
+- `POST /school_needs` - 建立新需求（學校）
+- `GET /my_needs` - 取得我的需求（學校）
+- `GET /school_needs` - 取得所有公開需求
+- `GET /school_needs/{need_id}` - 取得單一需求
+- `PUT /school_needs/{need_id}` - 更新需求
+- `DELETE /school_needs/{need_id}` - 刪除需求
 
 ### 捐贈管理 (Donations)
-- `POST /api/v1/donations/` - 建立新捐贈（企業）
-- `GET /api/v1/donations/my` - 取得我的捐贈（企業）
+- `GET /company_donations` - 取得我的捐贈（企業）
 
 ### 儀表板 (Dashboard)
-- `GET /api/v1/dashboard/school` - 學校儀表板數據
-- `GET /api/v1/dashboard/company` - 企業儀表板數據
+- `GET /school_dashboard_stats` - 學校儀表板數據
+- `GET /company_dashboard_stats` - 企業儀表板數據
 
 ### 影響力故事 (Stories)
-- `GET /api/v1/stories/` - 取得所有影響力故事
-- `GET /api/v1/stories/{story_id}` - 取得單一故事
+- `GET /impact_stories` - 取得所有影響力故事
 
 ### 活動日誌 (Activity)
-- `GET /api/v1/activity/my` - 取得我的活動記錄
-- `GET /api/v1/activity/recent` - 取得最近活動記錄
+- `GET /recent_activity` - 取得最近活動記錄
 
 ## 專案結構
 
@@ -125,8 +122,9 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 edu-match-pro-backend/
 ├── app/
 │   ├── api/
-│   │   └── v1/
-│   │       └── endpoints/     # API 端點
+│   │   ├── main_api.py        # 主 API 端點
+│   │   ├── auth_api.py        # 認證 API
+│   │   └── dependencies.py    # API 依賴
 │   ├── core/                  # 核心設定
 │   ├── crud/                  # 資料庫操作
 │   ├── models/                # 資料庫模型
@@ -144,7 +142,7 @@ edu-match-pro-backend/
 
 1. 在 `app/schemas/` 中定義 Schema
 2. 在 `app/crud/` 中實作 CRUD 操作
-3. 在 `app/api/v1/endpoints/` 中建立端點
+3. 在 `app/api/` 中建立端點
 4. 在 `main.py` 中註冊路由
 
 ### 資料庫遷移
@@ -169,7 +167,7 @@ alembic downgrade -1
 curl http://127.0.0.1:8000
 
 # 測試認證
-curl -X POST "http://127.0.0.1:8000/api/v1/auth/register" \
+curl -X POST "http://127.0.0.1:8000/auth/register" \
   -H "Content-Type: application/json" \
   -d '{"email": "test@example.com", "password": "password123", "role": "school"}'
 ```

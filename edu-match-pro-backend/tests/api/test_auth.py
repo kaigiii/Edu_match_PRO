@@ -15,7 +15,7 @@ async def test_register_user():
     }
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        response = await c.post("/api/v1/auth/register", json=user_data)
+        response = await c.post("/auth/register", json=user_data)
     
     assert response.status_code == 201
     data = response.json()
@@ -38,7 +38,7 @@ async def test_login_for_access_token():
     }
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        await c.post("/api/v1/auth/register", json=user_data)
+        await c.post("/auth/register", json=user_data)
     
     # 測試登入
     login_data = {
@@ -46,7 +46,7 @@ async def test_login_for_access_token():
         "password": "password123"
     }
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        response = await c.post("/api/v1/auth/login", data=login_data)
+        response = await c.post("/auth/login", data=login_data)
     
     assert response.status_code == 200
     data = response.json()
@@ -66,20 +66,20 @@ async def test_get_current_user():
     }
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        await c.post("/api/v1/auth/register", json=user_data)
+        await c.post("/auth/register", json=user_data)
     
     login_data = {
         "username": email,
         "password": "password123"
     }
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        login_response = await c.post("/api/v1/auth/login", data=login_data)
+        login_response = await c.post("/auth/login", data=login_data)
     token = login_response.json()["access_token"]
     
     # 測試獲取當前使用者
     headers = {"Authorization": f"Bearer {token}"}
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        response = await c.get("/api/v1/auth/users/me", headers=headers)
+        response = await c.get("/auth/users/me", headers=headers)
     
     assert response.status_code == 200
     data = response.json()
@@ -99,11 +99,11 @@ async def test_register_duplicate_email():
     }
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        response1 = await c.post("/api/v1/auth/register", json=user_data)
+        response1 = await c.post("/auth/register", json=user_data)
     assert response1.status_code == 201
     # 第二次註冊應該失敗
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        response2 = await c.post("/api/v1/auth/register", json=user_data)
+        response2 = await c.post("/auth/register", json=user_data)
     assert response2.status_code == 400
 
 
@@ -119,7 +119,7 @@ async def test_login_invalid_credentials():
     }
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        await c.post("/api/v1/auth/register", json=user_data)
+        await c.post("/auth/register", json=user_data)
     
     # 使用錯誤密碼登入
     login_data = {
@@ -127,5 +127,5 @@ async def test_login_invalid_credentials():
         "password": "wrongpassword"
     }
     async with AsyncClient(transport=transport, base_url="http://test") as c:
-        response = await c.post("/api/v1/auth/login", data=login_data)
+        response = await c.post("/auth/login", data=login_data)
     assert response.status_code == 401
