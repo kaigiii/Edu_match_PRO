@@ -1,8 +1,8 @@
-import uuid
-from sqlmodel import SQLModel, Field, Relationship, ForeignKey, Column
+from sqlmodel import Field, Relationship, Column
 from typing import Optional, List, TYPE_CHECKING
 from enum import Enum
 from sqlalchemy import ARRAY, Integer
+import uuid
 from app.models.base import BaseModel
 
 if TYPE_CHECKING:

@@ -9,6 +9,8 @@ from app.schemas.token_schemas import Token
 from app.schemas.user_schemas import UserCreate, UserPublic
 from app.crud.user_crud import create_user, get_user_by_email, authenticate_user
 from app.core.security import create_access_token
+from app.api.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter(tags=["Authentication"])
 
@@ -51,3 +53,14 @@ async def login(
     
     access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/auth/users/me", response_model=UserPublic)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """取得當前使用者資訊"""
+    return UserPublic(
+        id=current_user.id,
+        email=current_user.email,
+        role=current_user.role,
+        created_at=current_user.created_at,
+    )

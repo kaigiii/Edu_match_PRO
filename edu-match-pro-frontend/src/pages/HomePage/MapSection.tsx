@@ -1,90 +1,29 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import TaiwanMap, { TaiwanMapRef } from '../../components/TaiwanMap';
 import { HomePageAnimations } from './animation.config';
+import { apiService } from '../../services/apiService';
+import { PlatformStats } from '../../types';
 
 // 註冊 ScrollTrigger 插件
 gsap.registerPlugin(ScrollTrigger);
 
-// 假資料：學校位置和需求
-const mockSchoolData = [
-  { 
-    id: 1, 
-    name: '台東縣太麻里國小', 
-    needs: ['電腦設備', '圖書資源'],
-    students: 45,
-    status: 'urgent' as const
-  },
-  { 
-    id: 2, 
-    name: '花蓮縣秀林國中', 
-    needs: ['體育器材', '音樂設備'],
-    students: 78,
-    status: 'active' as const
-  },
-  { 
-    id: 3, 
-    name: '屏東縣霧台國小', 
-    needs: ['教學設備', '圖書資源'],
-    students: 32,
-    status: 'urgent' as const
-  },
-  { 
-    id: 4, 
-    name: '南投縣信義國中', 
-    needs: ['電腦設備', '實驗器材'],
-    students: 156,
-    status: 'active' as const
-  },
-  { 
-    id: 5, 
-    name: '嘉義縣阿里山國小', 
-    needs: ['圖書資源', '教學設備'],
-    students: 28,
-    status: 'urgent' as const
-  },
-  { 
-    id: 6, 
-    name: '新竹縣尖石國中', 
-    needs: ['體育器材', '電腦設備'],
-    students: 89,
-    status: 'active' as const
-  },
-  { 
-    id: 7, 
-    name: '苗栗縣泰安國小', 
-    needs: ['音樂設備', '圖書資源'],
-    students: 41,
-    status: 'urgent' as const
-  },
-  { 
-    id: 8, 
-    name: '宜蘭縣大同國中', 
-    needs: ['實驗器材', '體育器材'],
-    students: 134,
-    status: 'active' as const
-  },
+// 手動設定 10 個光點位置（使用比例定位，範圍 0-100%）
+const lightPositions = [
+  { id: 1, x: 15, y: 13, status: 'urgent' },   // 台東縣 (15%, 13%)
+  { id: 2, x: 25, y: 10, status: 'normal' },   // 花蓮縣 (25%, 10%)
+  { id: 3, x: 19, y: 33, status: 'urgent' },   // 屏東縣 (19%, 33%)
+  { id: 4, x: 38, y: 25, status: 'normal' },   // 南投縣 (38%, 25%)
+  { id: 5, x: 35, y: 30, status: 'normal' },   // 嘉義縣 (35%, 30%)
+  { id: 6, x: 23, y: 17, status: 'urgent' },   // 新竹縣 (23%, 17%)
+  { id: 7, x: 28, y: 20, status: 'normal' },   // 苗栗縣 (28%, 20%)
+  { id: 8, x: 44, y: 13, status: 'normal' },   // 宜蘭縣 (44%, 13%)
+  { id: 9, x: 31, y: 33, status: 'urgent' },   // 高雄市 (31%, 33%)
+  { id: 10, x: 80, y: 80, status: 'normal' }   // 台中市 (40%, 20%)
 ];
-
-// 100x100 網格系統的標記位置（基於台灣地圖的實際地理位置）
-const getMarkerPosition = (id: number) => {
-  // 根據台灣地圖的實際地理位置在 100x100 網格中分配位置
-  const positions: { [key: number]: { x: number; y: number } } = {
-    1: { x: 70, y: 30 },  // 台東縣太麻里國小 (東部偏南)
-    2: { x: 80, y: 25 },  // 花蓮縣秀林國中 (東部偏北)
-    3: { x: 75, y: 40 },  // 屏東縣霧台國小 (南部)
-    4: { x: 90, y: 35 },  // 南投縣信義國中 (中部偏南)
-    5: { x: 86, y: 38 },  // 嘉義縣阿里山國小 (中南部)
-    6: { x: 67, y: 30 },  // 新竹縣尖石國中 (北部)
-    7: { x: 69, y: 70 },  // 苗栗縣泰安國小 (中北部)
-    8: { x: 92, y: 40 },  // 宜蘭縣大同國中 (東北部)
-  };
-  
-  return positions[id] || { x: 50, y: 50 }; // 預設位置
-};
 
 const MapSection = () => {
   const navigate = useNavigate();
@@ -94,12 +33,32 @@ const MapSection = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const taiwanMapRef = useRef<TaiwanMapRef>(null);
   const statsRef = useRef<HTMLDivElement>(null);
-  const [selectedSchool, setSelectedSchool] = useState<typeof mockSchoolData[0] | null>(null);
+  // 移除學校選擇功能，只顯示統計數據
+  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // 處理開始配對按鈕點擊
   const handleStartMatching = () => {
     navigate('/needs');
   };
+
+  // 獲取平台統計數據
+  useEffect(() => {
+    const fetchPlatformStats = async () => {
+      try {
+        setIsLoadingStats(true);
+        const stats = await apiService.getPlatformStats();
+        setPlatformStats(stats);
+      } catch (error) {
+        console.error('獲取平台統計數據失敗:', error);
+        // 不設置任何默認值，保持為 null
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    fetchPlatformStats();
+  }, []);
 
   useLayoutEffect(() => {
     if (!sectionRef.current || !titleRef.current || !descriptionRef.current || !mapRef.current || !statsRef.current) return;
@@ -136,39 +95,15 @@ const MapSection = () => {
       ease: "power2.out"
     }, 0.2);
 
-    // 學校標記動畫
-    tl.call(() => {
-      // 為每個學校標記添加閃爍動畫
-      mockSchoolData.forEach((school, index) => {
-        const marker = document.getElementById(`school-marker-${school.id}`);
-        if (marker) {
-          gsap.set(marker, { opacity: 0, scale: 0 });
-          tl.to(marker, {
-        opacity: 1, 
-        scale: 1,
-            duration: 0.3,
-            ease: "back.out(1.7)"
-          }, 0.4 + index * 0.1);
-          
-          // 添加閃爍效果
-          tl.to(marker, {
-            scale: 1.2,
-            duration: 0.1,
-            yoyo: true,
-            repeat: 2,
-            ease: "power2.inOut"
-          }, `>-0.1`);
-        }
-      });
-    }, null, 0.4);
+    // 移除光點 GSAP 動畫，光點直接顯示
 
-    // 統計數據淡入
+    // 統計數據淡入 - 提早到 0.1 秒
     tl.to(statsRef.current, {
       opacity: 1,
       y: 0,
       duration: 0.6,
       ease: "power2.out"
-    }, 0.6);
+    }, 0.1);
 
     // 清理函數
     return () => {
@@ -241,58 +176,51 @@ const MapSection = () => {
                     }}
                   />
               
-                {/* 學校標記 - 使用 100x100 網格系統 */}
-                {mockSchoolData.map((school) => {
-                  const position = getMarkerPosition(school.id);
-                  return (
-                    <div
-                      key={school.id}
-                      id={`school-marker-${school.id}`}
-                      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
-                      style={{
-                        left: `${position.x}%`,
-                        top: `${position.y}%`,
-                      }}
-                      onClick={() => setSelectedSchool(school)}
-                    >
-                    {/* 閃爍的紅點 */}
+                {/* 光點標記 */}
+                {lightPositions.map((light) => (
+                  <div
+                    key={light.id}
+                    id={`light-marker-${light.id}`}
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
+                    style={{
+                      left: `${light.x}%`,
+                      top: `${light.y}%`,
+                    }}
+                  >
+                    {/* 閃爍的光點 */}
                     <div className="relative group">
-                      <div className={`w-6 h-6 rounded-full shadow-xl ${
-                        school.status === 'urgent' 
+                      <div className={`w-4 h-4 rounded-full shadow-xl ${
+                        light.status === 'urgent' 
                           ? 'bg-red-500 animate-pulse shadow-red-500/70' 
                           : 'bg-orange-500 animate-pulse shadow-orange-500/70'
                       }`}></div>
-                      <div className={`absolute inset-0 w-6 h-6 rounded-full animate-ping opacity-75 ${
-                        school.status === 'urgent' ? 'bg-red-500' : 'bg-orange-500'
+                      <div className={`absolute inset-0 w-4 h-4 rounded-full animate-ping opacity-75 ${
+                        light.status === 'urgent' ? 'bg-red-500' : 'bg-orange-500'
                       }`}></div>
                       {/* 外圈光暈 */}
-                      <div className={`absolute inset-0 w-12 h-12 -translate-x-3 -translate-y-3 rounded-full animate-pulse ${
-                        school.status === 'urgent' ? 'bg-red-500/30' : 'bg-orange-500/30'
+                      <div className={`absolute inset-0 w-8 h-8 -translate-x-2 -translate-y-2 rounded-full animate-pulse ${
+                        light.status === 'urgent' ? 'bg-red-500/30' : 'bg-orange-500/30'
                       }`}></div>
                       {/* 內圈光暈 */}
-                      <div className={`absolute inset-0 w-8 h-8 -translate-x-1 -translate-y-1 rounded-full animate-pulse ${
-                        school.status === 'urgent' ? 'bg-red-500/50' : 'bg-orange-500/50'
+                      <div className={`absolute inset-0 w-6 h-6 -translate-x-1 -translate-y-1 rounded-full animate-pulse ${
+                        light.status === 'urgent' ? 'bg-red-500/50' : 'bg-orange-500/50'
                       }`}></div>
                     </div>
-                    
-                    {/* 學校名稱標籤 */}
-                    <div className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium text-gray-800 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg border border-gray-200">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          school.status === 'urgent' ? 'bg-red-500' : 'bg-orange-500'
-                        }`}></div>
-                        <span>{school.name}</span>
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {school.students} 位學生
-                      </div>
-                    </div>
-                    </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
-            
+            {/* 行動呼籲（行動版） - 顯示在地圖下方 */}
+            <div className="pt-6 lg:hidden">
+              <motion.button
+                onClick={handleStartMatching}
+                className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                開始配對 →
+              </motion.button>
+            </div>
           </div>
 
           {/* 右側：統計數據和學校資訊 */}
@@ -300,71 +228,48 @@ const MapSection = () => {
             {/* 統計數據 */}
             <div ref={statsRef} className="grid grid-cols-2 gap-4 sm:gap-6">
               <div className="bg-black/40 backdrop-blur-md rounded-2xl p-4 sm:p-6 text-center border border-white/50 shadow-2xl">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">{mockSchoolData.length}</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
+                  {isLoadingStats ? (
+                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  ) : (
+                    platformStats?.schoolsWithNeeds || 0
+                  )}
+                </div>
                 <div className="text-white text-xs sm:text-sm font-semibold drop-shadow-md">需要幫助的學校</div>
               </div>
               <div className="bg-black/40 backdrop-blur-md rounded-2xl p-4 sm:p-6 text-center border border-white/50 shadow-2xl">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">15</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
+                  {isLoadingStats ? (
+                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  ) : (
+                    platformStats?.completedMatches || 0
+                  )}
+                </div>
                 <div className="text-white text-xs sm:text-sm font-semibold drop-shadow-md">已配對成功</div>
               </div>
               <div className="bg-black/40 backdrop-blur-md rounded-2xl p-4 sm:p-6 text-center border border-white/50 shadow-2xl">
                 <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
-                  {mockSchoolData.reduce((sum, school) => sum + school.students, 0)}
+                  {isLoadingStats ? (
+                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  ) : (
+                    platformStats?.studentsBenefited || 0
+                  )}
                 </div>
                 <div className="text-white text-xs sm:text-sm font-semibold drop-shadow-md">受益學生</div>
               </div>
               <div className="bg-black/40 backdrop-blur-md rounded-2xl p-4 sm:p-6 text-center border border-white/50 shadow-2xl">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">98%</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 sm:mb-2 drop-shadow-lg">
+                  {isLoadingStats ? (
+                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  ) : (
+                    `${platformStats?.successRate || 0}%`
+                  )}
+                </div>
                 <div className="text-white text-xs sm:text-sm font-semibold drop-shadow-md">配對成功率</div>
               </div>
             </div>
 
-            {/* 選中的學校資訊 */}
-            {selectedSchool && (
-              <motion.div 
-                className="bg-black/40 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-2xl"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h3 className="text-xl font-semibold text-white mb-3 drop-shadow-lg">{selectedSchool.name}</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-white text-sm font-semibold drop-shadow-md">學生人數：</span>
-                    <span className="text-white font-bold drop-shadow-md">{selectedSchool.students} 人</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-white text-sm font-semibold drop-shadow-md">需求狀態：</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedSchool.status === 'urgent' 
-                        ? 'bg-red-500/20 text-red-300' 
-                        : 'bg-orange-500/20 text-orange-300'
-                    }`}>
-                      {selectedSchool.status === 'urgent' ? '緊急' : '一般'}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-white text-sm font-semibold drop-shadow-md">需求項目：</div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedSchool.needs.map((need, index) => (
-                        <span 
-                          key={index}
-                          className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-xs"
-                        >
-                          {need}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <button 
-                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors duration-200"
-                  onClick={() => setSelectedSchool(null)}
-                >
-                  查看詳情
-                </button>
-            </motion.div>
-            )}
+            {/* 移除選中學校資訊顯示，只顯示統計數據 */}
 
             {/* 特色說明 */}
             <div className="space-y-4">
@@ -408,8 +313,8 @@ const MapSection = () => {
               </div>
           </div>
           
-            {/* 行動呼籲 */}
-            <div className="pt-6">
+            {/* 行動呼籲（桌面版） */}
+            <div className="pt-6 hidden lg:block">
               <motion.button
                 onClick={handleStartMatching}
                 className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"

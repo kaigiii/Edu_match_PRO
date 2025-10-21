@@ -1,3 +1,4 @@
+import uuid
 from sqlmodel import SQLModel, Field, Relationship, ForeignKey
 from typing import Optional, TYPE_CHECKING
 from app.models.base import BaseModel
@@ -9,7 +10,7 @@ if TYPE_CHECKING:
 class Profile(BaseModel, table=True):
     __tablename__ = "profile"
     
-    user_id: str = Field(foreign_key="user.id")
+    user_id: uuid.UUID = Field(foreign_key="user.id")
     organization_name: str
     contact_person: str
     position: str

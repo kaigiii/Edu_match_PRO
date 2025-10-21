@@ -16,4 +16,14 @@ class CompanyDashboardStats(SQLModel):
     studentsHelped: int
     totalDonation: int
     volunteerHours: int
+    avgProjectDuration: int
+    successRate: float
     sdgContributions: Dict[str, int]
+
+
+class PlatformStats(SQLModel):
+    """平台整體統計數據"""
+    schoolsWithNeeds: int
+    completedMatches: int
+    studentsBenefited: int
+    successRate: float

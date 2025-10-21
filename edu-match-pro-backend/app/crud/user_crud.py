@@ -3,7 +3,7 @@ from sqlalchemy import select
 from typing import Optional
 from app.models.user import User, UserRole
 from app.schemas.user_schemas import UserCreate
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password
 
 
 async def get_user_by_email(session: AsyncSession, email: str) -> Optional[User]:
@@ -30,3 +30,13 @@ async def create_user(session: AsyncSession, user_in: UserCreate) -> User:
     await session.refresh(db_user)
     
     return db_user
+
+
+async def authenticate_user(session: AsyncSession, email: str, password: str) -> Optional[User]:
+    """驗證用戶登入"""
+    user = await get_user_by_email(session, email)
+    if not user:
+        return None
+    if not verify_password(password, user.password):
+        return None
+    return user

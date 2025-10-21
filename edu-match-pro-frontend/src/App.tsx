@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ScrollToTop from './components/ScrollToTop';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import MainLayout from './layouts/MainLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import HomePage from './pages/HomePage';
@@ -26,7 +27,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
-    <>
+    <ErrorBoundary>
       <ScrollToTop />
       <Routes>
         {/* 使用 MainLayout 的路由 */}
@@ -72,7 +73,7 @@ function App() {
         pauseOnHover
         theme="light"
       />
-    </>
+    </ErrorBoundary>
   );
 }
 

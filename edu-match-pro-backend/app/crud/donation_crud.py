@@ -9,6 +9,10 @@ from app.models.need import Need, NeedStatus
 from app.models.activity_log import ActivityType
 from app.schemas.donation_schemas import DonationCreate
 from app.crud.activity_log_crud import create_activity_log
+from app.crud.base_crud import BaseCRUD
+
+# 創建 Donation CRUD 實例
+donation_crud = BaseCRUD(Donation)
 
 
 async def create_donation(session: AsyncSession, donation_in: DonationCreate, company_id: uuid.UUID) -> Optional[Donation]:
@@ -23,8 +27,8 @@ async def create_donation(session: AsyncSession, donation_in: DonationCreate, co
     if not need:
         return None
     
-    # 檢查 Need 狀態是否為 active
-    if need.status != NeedStatus.active:
+    # 檢查 Need 狀態是否為 active 或 in_progress
+    if need.status not in [NeedStatus.active, NeedStatus.in_progress]:
         return None
     
     # 更新 Need 狀態為 in_progress
@@ -36,7 +40,7 @@ async def create_donation(session: AsyncSession, donation_in: DonationCreate, co
         need_id=donation_in.need_id,
         donation_type=donation_in.donation_type,
         description=donation_in.description,
-        status=DonationStatus.in_progress,
+        status=DonationStatus.pending,
         progress=0
     )
     
@@ -73,7 +77,8 @@ async def get_donations_by_company(session: AsyncSession, company_id: uuid.UUID)
         select(Donation)
         .where(Donation.company_id == company_id)
         .options(
-            selectinload(Donation.need)
+            selectinload(Donation.need),
+            selectinload(Donation.company)
         )
         .order_by(Donation.created_at.desc())
     )

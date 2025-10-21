@@ -5,7 +5,7 @@ export const HomePageAnimations = {
   // 區塊 3: 解決方案區塊的動畫節奏
   solutionSection: {
     // 總滾動高度，數字越大，滾動時間越長，節奏越慢
-    totalDuration: '400vh', 
+    totalDuration: '250vh', 
     
     // 每個階段的起點和終點 (在 0 到 1 的進度中)
     stages: {
@@ -18,7 +18,7 @@ export const HomePageAnimations = {
     },
 
     // 淡入淡出的過渡持續時間 (佔總進度的百分比)
-    fadeDuration: 0.05,
+    fadeDuration: 0.02,
   },
   
   // 地圖區塊的動畫參數

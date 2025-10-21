@@ -5,7 +5,7 @@ from enum import Enum
 from sqlmodel import SQLModel
 from app.models.donation import DonationStatus
 from app.schemas.need_schemas import NeedPublic
-from app.schemas.profile_schemas import ProfilePublic
+from app.schemas.user_schemas import UserPublic
 
 
 # 捐贈類型枚舉
@@ -35,7 +35,7 @@ class DonationPublic(DonationBase):
     need_id: uuid.UUID
     company_id: uuid.UUID
     status: DonationStatus
-    donation_date: datetime
+    created_at: datetime
     completion_date: Optional[datetime] = None
-    need: NeedPublic
-    company: Optional[ProfilePublic] = None
+    need: Optional[NeedPublic] = None
+    company: Optional[UserPublic] = None

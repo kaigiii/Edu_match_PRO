@@ -1,15 +1,24 @@
 import { useState } from 'react';
 import NeedCard from '../components/NeedCard';
-import { useApi } from '../hooks/useApi';
+import { useApiState, ApiStateRenderer } from '../hooks/useApiState';
+import { API_ENDPOINTS } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
 import type { SchoolNeed } from '../types';
 
 const ExploreNeedsPage = () => {
-  const { data: needs, isLoading, error, isUsingFallback } = useApi<SchoolNeed[]>('http://localhost:3001/school_needs');
+  const { userRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  
+  // 根據用戶角色選擇不同的端點
+  const endpoint = userRole === 'company' ? API_ENDPOINTS.COMPANY_NEEDS : API_ENDPOINTS.SCHOOL_NEEDS;
+  
+  const state = useApiState<SchoolNeed[]>({
+    url: endpoint
+  });
 
   // 創建篩選後的列表
-  const filteredNeeds = needs?.filter((need) => {
+  const filteredNeeds = state.data?.filter((need) => {
     // 第一層過濾 (分類)
     const categoryMatch = selectedCategory === '' || need.category === selectedCategory;
     
@@ -21,7 +30,7 @@ const ExploreNeedsPage = () => {
     return categoryMatch && searchMatch;
   }) || [];
 
-  if (isLoading) {
+  if (state.isLoading) {
     return (
       <div className="flex justify-center items-center min-h-64">
         <div className="text-lg text-gray-600">讀取中...</div>
@@ -29,7 +38,7 @@ const ExploreNeedsPage = () => {
     );
   }
 
-  if (error) {
+  if (state.error) {
     return (
       <div className="flex justify-center items-center min-h-64">
         <div className="text-lg text-red-600">資料載入失敗...</div>
@@ -39,7 +48,9 @@ const ExploreNeedsPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">探索所有需求</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-8">
+        {userRole === 'company' ? '探索所有需求（包括模擬需求）' : '探索所有需求'}
+      </h1>
       
       {/* 搜尋和篩選控制區 */}
       <div className="flex gap-4 mb-8">

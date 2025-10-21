@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import { 
   ChartBarIcon, 
@@ -10,21 +10,16 @@ import {
   HeartIcon,
   StarIcon
 } from '@heroicons/react/24/outline';
-import { useApi } from '../hooks/useApi';
+import { useApiState, ApiStateRenderer } from '../hooks/useApiState';
+import { API_ENDPOINTS } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
+import apiService from '../services/apiService';
 import NeedCard from '../components/NeedCard';
-import type { SchoolNeed } from '../types';
+import SponsorModal from '../components/SponsorModal';
+import { calculateCompanyStats, formatNumber, formatCurrency, calculatePercentage } from '../utils/stats';
+import type { SchoolNeed, ImpactStory, CompanyDashboardStats } from '../types';
 
-interface CompanyDashboardStats {
-  completedProjects: number;
-  studentsHelped: number;
-  volunteerHours: number;
-  totalDonation: number;
-  avgProjectDuration: number;
-  successRate: number;
-  sdgContributions: {
-    [key: string]: number;
-  };
-}
+// 使用全域型別定義的 CompanyDashboardStats
 
 interface RecentProject {
   id: string;
@@ -36,24 +31,70 @@ interface RecentProject {
   completionDate?: string;
 }
 
-interface ImpactStory {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  school: string;
-  studentsBenefited: number;
-  date: string;
-}
+// 使用統一的 ImpactStory 類型定義
 
 const CompanyDashboardPage = () => {
+  const { userRole } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'impact' | 'analytics'>('overview');
+  const [companyStats, setCompanyStats] = useState<CompanyDashboardStats | null>(null);
+  const [sponsorModal, setSponsorModal] = useState<{ isOpen: boolean; need: SchoolNeed | null }>({
+    isOpen: false,
+    need: null
+  });
   
-  const { data: stats, isLoading, error, isUsingFallback: statsFallback } = useApi<CompanyDashboardStats>('http://localhost:3001/company_dashboard_stats');
-  const { data: recommendedNeeds, isLoading: recommendationsLoading, error: recommendationsError, isUsingFallback: recommendationsFallback } = useApi<SchoolNeed[]>('http://localhost:3001/ai_recommended_needs');
-  const { data: recentProjects, isLoading: projectsLoading, isUsingFallback: projectsFallback } = useApi<RecentProject[]>('http://localhost:3001/recent_projects');
-  const { data: impactStories, isLoading: storiesLoading, isUsingFallback: storiesFallback } = useApi<ImpactStory[]>('http://localhost:3001/impact_stories');
+  // 根據用戶角色選擇不同的推薦端點
+  const recommendedEndpoint = userRole === 'company' ? API_ENDPOINTS.COMPANY_AI_RECOMMENDED_NEEDS : API_ENDPOINTS.AI_RECOMMENDED_NEEDS;
+  
+  const recommendedNeedsState = useApiState<SchoolNeed[]>({
+    url: recommendedEndpoint
+  });
+  const recentProjectsState = useApiState<RecentProject[]>({
+    url: API_ENDPOINTS.RECENT_PROJECTS
+  });
+  const impactStoriesState = useApiState<ImpactStory[]>({
+    url: API_ENDPOINTS.IMPACT_STORIES
+  });
 
+  // 獲取企業儀表板統計數據
+  const fetchCompanyStats = async () => {
+    try {
+      const data = await apiService.getCompanyDashboardStats();
+      setCompanyStats(data as any);
+    } catch (err) {
+      console.error('獲取企業統計數據時發生錯誤:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanyStats();
+  }, []);
+
+  // 處理贊助功能
+  const handleSponsor = (need: SchoolNeed) => {
+    setSponsorModal({ isOpen: true, need });
+  };
+
+  const handleSponsorConfirm = async (sponsorData: { donation_type: string; description: string }) => {
+    if (!sponsorModal.need) return;
+
+    try {
+      await apiService.sponsorNeed(sponsorModal.need.id, sponsorData);
+      // 可以在這裡添加成功提示
+      console.log('贊助成功！');
+      setSponsorModal({ isOpen: false, need: null });
+    } catch (error) {
+      console.error('贊助失敗:', error);
+      // 可以在這裡添加錯誤提示
+    }
+  };
+
+  const handleSponsorClose = () => {
+    setSponsorModal({ isOpen: false, need: null });
+  };
+
+  // 檢查是否有任何狀態正在載入
+  const isLoading = !companyStats || recommendedNeedsState.isLoading || recentProjectsState.isLoading || impactStoriesState.isLoading;
+  
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-64">
@@ -62,16 +103,8 @@ const CompanyDashboardPage = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="text-lg text-red-600">資料載入失敗...</div>
-      </div>
-    );
-  }
-
   // 轉換 SDG 數據為圖表格式
-  const chartData = stats ? Object.entries(stats.sdgContributions).map(([sdg, count]) => ({
+  const chartData = companyStats?.sdgContributions ? Object.entries(companyStats.sdgContributions).map(([sdg, count]) => ({
     name: `SDG ${sdg}`,
     專案數: count
   })) : [];
@@ -161,7 +194,7 @@ const CompanyDashboardPage = () => {
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
               >
-                {stats?.completedProjects || 0}
+                {companyStats?.completedProjects || 0}
               </motion.p>
             </div>
             <div className="text-blue-600">
@@ -195,7 +228,7 @@ const CompanyDashboardPage = () => {
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
               >
-                {stats?.studentsHelped || 0}
+                {companyStats?.studentsHelped || 0}
               </motion.p>
             </div>
             <div className="text-green-600">
@@ -229,7 +262,7 @@ const CompanyDashboardPage = () => {
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
               >
-                {stats?.volunteerHours || 0}
+                {companyStats?.volunteerHours || 0}
               </motion.p>
             </div>
             <div className="text-purple-600">
@@ -265,7 +298,7 @@ const CompanyDashboardPage = () => {
               animate={{ scale: 1 }}
               transition={{ delay: 0.6, type: "spring", stiffness: 200 }}
             >
-              NT$ {stats?.totalDonation?.toLocaleString() || 0}
+              NT$ {companyStats?.totalDonation?.toLocaleString() || 0}
             </motion.p>
           </div>
           <div className="text-indigo-600">
@@ -345,7 +378,7 @@ const CompanyDashboardPage = () => {
           </div>
         </div>
         
-        {recommendationsLoading ? (
+          {recommendedNeedsState.isLoading ? (
           <motion.div 
             className="text-center py-12"
             initial={{ opacity: 0 }}
@@ -360,7 +393,7 @@ const CompanyDashboardPage = () => {
               <span className="text-lg text-gray-600">AI 正在分析您的偏好...</span>
             </div>
           </motion.div>
-        ) : recommendationsError ? (
+        ) : recommendedNeedsState.error ? (
           <motion.div 
             className="text-center py-12"
             initial={{ opacity: 0 }}
@@ -375,14 +408,18 @@ const CompanyDashboardPage = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            {recommendedNeeds?.map((need, index) => (
+            {recommendedNeedsState.data?.map((need, index) => (
               <motion.div
                 key={need.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <NeedCard need={need} progress={Math.floor(Math.random() * 40) + 60} />
+                <NeedCard 
+                  need={need} 
+                  progress={Math.floor(Math.random() * 40) + 60} 
+                  onSponsor={handleSponsor}
+                />
               </motion.div>
             ))}
           </motion.div>
@@ -400,13 +437,13 @@ const CompanyDashboardPage = () => {
         >
           <h2 className="text-2xl font-bold text-gray-900 mb-6">我的專案</h2>
           
-          {projectsLoading ? (
+          {recentProjectsState.isLoading ? (
             <div className="text-center py-12">
               <div className="text-lg text-gray-600">載入專案中...</div>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {recentProjects?.map((project, index) => (
+              {recentProjectsState.data?.map((project, index) => (
                 <motion.div
                   key={project.id}
                   className="bg-white rounded-xl shadow-lg p-6 border border-gray-200"
@@ -459,13 +496,13 @@ const CompanyDashboardPage = () => {
         >
           <h2 className="text-2xl font-bold text-gray-900 mb-6">影響力故事</h2>
           
-          {storiesLoading ? (
+          {impactStoriesState.isLoading ? (
             <div className="text-center py-12">
               <div className="text-lg text-gray-600">載入故事中...</div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {impactStories?.map((story, index) => (
+              {impactStoriesState.data?.map((story, index) => (
                 <motion.div
                   key={story.id}
                   className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200"
@@ -475,7 +512,7 @@ const CompanyDashboardPage = () => {
                 >
                   <div className="h-48 overflow-hidden">
                     <img 
-                      src={story.image} 
+                      src={story.imageUrl} 
                       alt={story.title}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
@@ -483,15 +520,15 @@ const CompanyDashboardPage = () => {
                   
                   <div className="p-6">
                     <h3 className="text-lg font-bold text-gray-900 mb-2">{story.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{story.description}</p>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{story.summary}</p>
                     
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">{story.school}</span>
-                      <span className="text-brand-blue font-semibold">{story.studentsBenefited} 位學生受惠</span>
+                      <span className="text-gray-500">{story.schoolName}</span>
+                      <span className="text-brand-blue font-semibold">{story.impact?.studentsBenefited || 0} 位學生受惠</span>
                     </div>
                     
                     <div className="mt-4 pt-4 border-t border-gray-100">
-                      <span className="text-xs text-gray-500">{story.date}</span>
+                      <span className="text-xs text-gray-500">{story.storyDate}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -517,19 +554,19 @@ const CompanyDashboardPage = () => {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">平均專案時長</span>
-                  <span className="font-bold text-lg text-blue-600">{stats?.avgProjectDuration || 0} 天</span>
+                  <span className="font-bold text-lg text-blue-600">{companyStats?.avgProjectDuration || 0} 天</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">專案成功率</span>
-                  <span className="font-bold text-lg text-green-600">{stats?.successRate || 0}%</span>
+                  <span className="font-bold text-lg text-green-600">{companyStats?.successRate || 0}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">總幫助學生</span>
-                  <span className="font-bold text-lg text-purple-600">{stats?.studentsHelped || 0} 人</span>
+                  <span className="font-bold text-lg text-purple-600">{companyStats?.studentsHelped || 0} 人</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">累積時數</span>
-                  <span className="font-bold text-lg text-orange-600">{stats?.volunteerHours || 0} 小時</span>
+                  <span className="font-bold text-lg text-orange-600">{companyStats?.volunteerHours || 0} 小時</span>
                 </div>
               </div>
             </div>
@@ -546,7 +583,7 @@ const CompanyDashboardPage = () => {
                       <p className="text-sm text-gray-600">本月完成</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-blue-600">{stats?.completedProjects || 0}</span>
+                  <span className="text-2xl font-bold text-blue-600">{companyStats?.completedProjects || 0}</span>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
@@ -557,7 +594,7 @@ const CompanyDashboardPage = () => {
                       <p className="text-sm text-gray-600">累積幫助</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-green-600">{stats?.studentsHelped || 0}</span>
+                  <span className="text-2xl font-bold text-green-600">{companyStats?.studentsHelped || 0}</span>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
@@ -568,13 +605,21 @@ const CompanyDashboardPage = () => {
                       <p className="text-sm text-gray-600">累積貢獻</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-purple-600">NT$ {stats?.totalDonation?.toLocaleString() || 0}</span>
+                  <span className="text-2xl font-bold text-purple-600">NT$ {companyStats?.totalDonation?.toLocaleString() || 0}</span>
                 </div>
               </div>
             </div>
           </div>
         </motion.div>
       )}
+
+      {/* 贊助彈窗 */}
+      <SponsorModal
+        isOpen={sponsorModal.isOpen}
+        onClose={handleSponsorClose}
+        need={sponsorModal.need}
+        onConfirm={handleSponsorConfirm}
+      />
     </div>
   );
 };

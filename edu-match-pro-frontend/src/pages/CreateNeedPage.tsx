@@ -4,12 +4,16 @@ import { toast } from 'react-toastify';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import type { SchoolNeed } from '../types';
+import apiService from '../services/apiService';
+import { API_ENDPOINTS } from '../config/api';
 
 interface FormData {
   title: string;
   category: string;
+  urgency: 'high' | 'medium' | 'low';
   studentCount: number;
   location: string;
+  sdgs: number[];
   description: string;
 }
 
@@ -21,28 +25,24 @@ const CreateNeedPage = () => {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     try {
       // 構造請求資料
-      const newNeed: SchoolNeed = {
-        id: `need-${Date.now()}`, // 生成唯一 ID
-        schoolName: "測試學校", // 模擬學校名稱
+      const newNeed = {
         title: data.title,
         description: data.description || "",
         category: data.category,
         location: data.location,
-        studentCount: data.studentCount,
-        imageUrl: "https://images.unsplash.com/photo-1517420532572-4b6a6c57f2f4?q=80&w=1287", // 預設圖片
-        urgency: "medium", // 預設緊急程度
-        sdgs: [4] // 預設 SDG 目標
+        student_count: data.studentCount,
+        image_url: "https://images.unsplash.com/photo-1517420532572-4b6a6c57f2f4?q=80&w=1287", // 預設圖片
+        urgency: data.urgency,
+        sdgs: data.sdgs
       };
 
-      // 使用新的 API 工具
-      const { createNeed } = await import('../utils/api');
-      await createNeed(newNeed);
+      const result = await apiService.createSchoolNeed(newNeed as any);
       
       toast.success('需求已成功提交！');
       navigate('/dashboard/school'); // 跳轉回儀表板
     } catch (error) {
       console.error('提交需求時發生錯誤:', error);
-      toast.error('提交失敗，請稍後再試');
+      toast.error(`提交失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
     }
   };
 
@@ -69,7 +69,7 @@ const CreateNeedPage = () => {
         animate={isShaking ? { x: [-10, 10, -10, 10, 0] } : {}}
         transition={{ duration: 0.5 }}
       >
-        {/* 需求標題 */}
+        {/* 1. 需求標題 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,7 +103,7 @@ const CreateNeedPage = () => {
           )}
         </motion.div>
 
-        {/* 需求分類 */}
+        {/* 2. 需求分類 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -142,11 +142,48 @@ const CreateNeedPage = () => {
           )}
         </motion.div>
 
-        {/* 受惠學生數 */}
+        {/* 3. 緊急程度 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <label htmlFor="urgency" className="block text-sm font-medium text-gray-700 mb-2">
+            緊急程度 *
+          </label>
+          <select
+            id="urgency"
+            {...register("urgency", { required: "請選擇緊急程度" })}
+            className={`w-full p-3 border rounded-lg transition-all duration-200 focus:ring-2 focus:ring-brand-blue focus:border-brand-blue ${
+              errors.urgency 
+                ? 'border-red-500 bg-red-50 focus:ring-red-500 focus:border-red-500' 
+                : 'border-gray-300 focus:border-brand-blue'
+            }`}
+          >
+            <option value="">請選擇緊急程度</option>
+            <option value="high">高緊急</option>
+            <option value="medium">中等</option>
+            <option value="low">一般</option>
+          </select>
+          {errors.urgency && (
+            <motion.span 
+              className="text-red-500 text-sm flex items-center mt-1"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              {errors.urgency.message}
+            </motion.span>
+          )}
+        </motion.div>
+
+        {/* 4. 受惠學生數 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
         >
           <label htmlFor="studentCount" className="block text-sm font-medium text-gray-700 mb-2">
             受惠學生數 *
@@ -179,11 +216,11 @@ const CreateNeedPage = () => {
           )}
         </motion.div>
 
-        {/* 學校地點 */}
+        {/* 5. 學校地點 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
         >
           <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
             學校地點 *
@@ -213,11 +250,74 @@ const CreateNeedPage = () => {
           )}
         </motion.div>
 
-        {/* 詳細說明 */}
+        {/* 6. SDGs 永續發展目標 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            SDGs 永續發展目標 *
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <label className="flex items-center space-x-2 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+              <input
+                type="checkbox"
+                value={0}
+                {...register("sdgs", { required: "請至少選擇一個 SDG 目標" })}
+                className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+              />
+              <span className="text-sm text-gray-700">無</span>
+            </label>
+            {[
+              { value: 1, label: "SDG 1: 消除貧窮" },
+              { value: 2, label: "SDG 2: 消除飢餓" },
+              { value: 3, label: "SDG 3: 健康與福祉" },
+              { value: 4, label: "SDG 4: 優質教育" },
+              { value: 5, label: "SDG 5: 性別平等" },
+              { value: 6, label: "SDG 6: 潔淨水資源" },
+              { value: 7, label: "SDG 7: 可負擔能源" },
+              { value: 8, label: "SDG 8: 就業與經濟成長" },
+              { value: 9, label: "SDG 9: 工業創新" },
+              { value: 10, label: "SDG 10: 減少不平等" },
+              { value: 11, label: "SDG 11: 永續城市" },
+              { value: 12, label: "SDG 12: 責任消費" },
+              { value: 13, label: "SDG 13: 氣候行動" },
+              { value: 14, label: "SDG 14: 海洋生態" },
+              { value: 15, label: "SDG 15: 陸地生態" },
+              { value: 16, label: "SDG 16: 和平正義" },
+              { value: 17, label: "SDG 17: 夥伴關係" }
+            ].map((sdg) => (
+              <label key={sdg.value} className="flex items-center space-x-2 p-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  value={sdg.value}
+                  {...register("sdgs", { required: "請至少選擇一個 SDG 目標" })}
+                  className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue"
+                />
+                <span className="text-sm text-gray-700">{sdg.label}</span>
+              </label>
+            ))}
+          </div>
+          {errors.sdgs && (
+            <motion.span 
+              className="text-red-500 text-sm flex items-center mt-1"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              {errors.sdgs.message}
+            </motion.span>
+          )}
+        </motion.div>
+
+        {/* 7. 詳細說明 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
         >
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
             詳細說明
@@ -236,7 +336,7 @@ const CreateNeedPage = () => {
           className="pt-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
         >
           <motion.button
             type="submit"

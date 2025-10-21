@@ -1,14 +1,51 @@
 export interface SchoolNeed {
   id: string;
-  schoolName: string;
+  school_id: string;
+  schoolName?: string; // 前端計算得出，後端不返回
   title: string;
   description: string;
   category: string;
   location: string;
-  studentCount: number;
-  imageUrl: string;
+  student_count: number;
+  image_url: string;
   urgency: 'high' | 'medium' | 'low';
   sdgs: number[];
+  status?: 'active' | 'in_progress' | 'completed' | 'cancelled';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CompanyDonation {
+  id: string;
+  need_id: string;
+  company_id: string;
+  donation_type: string;
+  description?: string;
+  progress: number;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  created_at: string;
+  completion_date?: string;
+  need?: {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    location: string;
+    student_count: number;
+    image_url: string;
+    urgency: string;
+    sdgs: number[];
+    status: string;
+    school_id: string;
+    created_at: string;
+    updated_at?: string;
+  };
+  company?: {
+    id: string;
+    email: string;
+    role: string;
+    created_at: string;
+  };
 }
 
 export interface ImpactStory {
@@ -57,16 +94,7 @@ export interface RecentProject {
   completionDate?: string;
 }
 
-export interface CompanyDonation {
-  id: string;
-  needId: string;
-  needTitle: string;
-  schoolName: string;
-  donationDate: string;
-  status: string;
-  type: string;
-  description: string;
-}
+// NOTE: Removed duplicate CompanyDonation definition
 
 export interface RecentActivity {
   id: string;
@@ -74,4 +102,11 @@ export interface RecentActivity {
   title: string;
   timestamp: string;
   status: 'success' | 'warning' | 'info';
+}
+
+export interface PlatformStats {
+  schoolsWithNeeds: number;
+  completedMatches: number;
+  studentsBenefited: number;
+  successRate: number;
 }

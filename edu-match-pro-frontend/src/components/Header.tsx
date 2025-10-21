@@ -10,6 +10,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   
   useMotionValueEvent(scrollY, "change", (latest) => {
     setIsScrolled(latest > 50);
@@ -34,17 +35,42 @@ const Header = () => {
       }
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <div className="w-full max-w-7xl mx-auto flex justify-between items-center px-4 h-20 transition-all duration-300">
+      <div className="w-full max-w-7xl mx-auto flex justify-between items-center px-4 h-20 transition-all duration-300 relative">
         {/* Logo */}
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Link to="/" className="text-xl font-bold text-neutral-900">
+          <Link 
+            to="/" 
+            className="text-xl font-bold text-neutral-900"
+            onClick={() => {
+              // 強制滾動到頂部，即使是在同一頁面
+              window.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: 'smooth'
+              });
+              setMobileOpen(false);
+            }}
+          >
             智匯偏鄉 Edu macth PRO
           </Link>
         </motion.div>
 
         {/* 右側導航項目和使用者選單 */}
         <div className="flex items-center space-x-4 md:space-x-8">
-          {/* 導航項目 */}
+          {/* 行動版漢堡鍵 */}
+          <button
+            className="lg:hidden inline-flex items-center justify-center p-2 rounded-md text-neutral-600 hover:text-neutral-900 hover:bg-gray-100 focus:outline-none"
+            aria-label="Open main menu"
+            onClick={() => setMobileOpen((v) => !v)}
+          >
+            {mobileOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            )}
+          </button>
+
+          {/* 導航項目（桌面版） */}
           <div className="hidden lg:flex items-center space-x-8">
             {/* 我是學校 Dropdown */}
             <Menu as="div" className="relative">
@@ -139,7 +165,7 @@ const Header = () => {
                 leaveFrom="transform opacity-100 scale-100"
                 leaveTo="transform opacity-0 scale-95"
               >
-                <Menu.Items className="absolute z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <Menu.Items className="absolute z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none right-0 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)] overflow-hidden">
                   <div className="py-1">
                     <div className="px-4 py-2 text-sm text-neutral-900 border-b">
                       <p className="font-medium">你好，{userRole === 'school' ? '王老師' : '陳經理'}</p>
@@ -155,14 +181,39 @@ const Header = () => {
               <motion.div whileHover={{ y: -2, color: '#3b82f6' }} whileTap={{ scale: 0.95 }}>
                 <Link to="/login" className="text-neutral-500 hover:text-brand-blue transition-colors font-medium">登入</Link>
                 </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link to="/register" className="bg-brand-blue text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-brand-blue-dark hover:shadow-lg transition-all">註冊</Link>
-                </motion.div>
+              <motion.div whileHover={{ y: -2, color: '#3b82f6' }} whileTap={{ scale: 0.95 }}>
+                <Link to="/register" className="text-neutral-500 hover:text-brand-blue transition-colors font-medium">註冊</Link>
+              </motion.div>
               </>
             )}
           </div>
         </div>
       </div>
+
+      {/* 行動版選單內容 */}
+      {mobileOpen && (
+        <div className="lg:hidden border-t border-gray-100 bg-white">
+          <div className="px-4 py-3 space-y-2">
+            <Link to="/for-schools" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>我是學校</Link>
+            <Link to="/for-companies" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>我是企業</Link>
+            <Link to="/needs" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>需求列表</Link>
+            <Link to="/stories" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>影響力故事</Link>
+            <Link to="/about" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>關於我們</Link>
+            <div className="pt-2 border-t border-gray-100"/>
+            {isAuthenticated ? (
+              <>
+                <Link to={userRole === 'school' ? '/dashboard/school' : '/dashboard/company'} className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>我的儀表板</Link>
+                <button onClick={() => { handleLogout(); setMobileOpen(false); }} className="block w-full text-left text-red-600">登出</button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>登入</Link>
+                <Link to="/register" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>註冊</Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </motion.header>
   );
 };

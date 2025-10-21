@@ -1,7 +1,7 @@
-import uuid
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field
 from typing import Optional
 from enum import Enum
+import uuid
 from app.models.base import BaseModel
 
 

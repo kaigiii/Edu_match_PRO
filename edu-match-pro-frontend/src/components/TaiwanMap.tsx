@@ -159,20 +159,6 @@ export const TaiwanMap = forwardRef<TaiwanMapRef, TaiwanMapProps>(({
         transition={{ duration: 0.8, ease: "easeOut" }}
       />
       
-      {/* 圖例 */}
-      {highlightCounties.length > 0 && !isLoading && (
-        <motion.div 
-          className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-20"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-brand-orange rounded-full"></div>
-            <span className="text-sm text-gray-600">有需求的縣市</span>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 });

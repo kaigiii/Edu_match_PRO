@@ -14,8 +14,14 @@ const DashboardLayout = () => {
     <div className="flex h-screen">
       {/* 側邊欄 */}
       <aside className="w-64 bg-gray-900 text-white shadow-xl">
+        {/* 頂部品牌列，貼齊最上緣 */}
+        <div className="bg-white px-6 py-4">
+          <Link to="/" className="block text-xl font-bold text-gray-900 leading-tight">
+            <span className="block">智匯偏鄉</span>
+            <span className="block">Edu macth PRO</span>
+          </Link>
+        </div>
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-6 text-white drop-shadow-lg">儀表板</h2>
           <nav className="space-y-2">
             {/* 根據用戶角色顯示不同的導航連結 */}
             {userRole === 'school' ? (

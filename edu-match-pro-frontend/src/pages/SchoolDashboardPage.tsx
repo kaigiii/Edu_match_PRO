@@ -1,43 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  ChartBarIcon, 
-  UserGroupIcon, 
+  ClipboardDocumentListIcon, 
   ClockIcon, 
-  CheckCircleIcon,
+  CheckCircleIcon, 
+  UserGroupIcon,
   PlusIcon,
   EyeIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
-import { useApi } from '../hooks/useApi';
+import { useApiState, ApiStateRenderer } from '../hooks/useApiState';
+import { API_ENDPOINTS } from '../config/api';
+import apiService from '../services/apiService';
 import NeedCard from '../components/NeedCard';
-import type { SchoolNeed } from '../types';
-
-interface SchoolDashboardStats {
-  totalNeeds: number;
-  activeNeeds: number;
-  completedNeeds: number;
-  studentsBenefited: number;
-  avgResponseTime: number;
-  successRate: number;
-}
-
-interface RecentActivity {
-  id: string;
-  type: 'created' | 'matched' | 'completed';
-  title: string;
-  timestamp: string;
-  status: 'success' | 'warning' | 'info';
-}
+import { calculateSchoolStats, formatNumber, calculatePercentage } from '../utils/stats';
+import type { SchoolNeed, SchoolDashboardStats, RecentActivity } from '../types';
 
 const SchoolDashboardPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'needs' | 'analytics'>('overview');
+  const [myNeeds, setMyNeeds] = useState<SchoolNeed[]>([]);
   
-  const { data: stats, isLoading: statsLoading, error: statsError, isUsingFallback: statsFallback } = useApi<SchoolDashboardStats>('http://localhost:3001/school_dashboard_stats');
-  const { data: myNeeds, isLoading: needsLoading, error: needsError, isUsingFallback: needsFallback } = useApi<SchoolNeed[]>('http://localhost:3001/my_needs');
-  const { data: recentActivity, isLoading: activityLoading, isUsingFallback: activityFallback } = useApi<RecentActivity[]>('http://localhost:3001/recent_activity');
+  const statsState = useApiState<SchoolDashboardStats>({
+    url: API_ENDPOINTS.SCHOOL_DASHBOARD_STATS
+  });
+  const activityState = useApiState<RecentActivity[]>({
+    url: API_ENDPOINTS.RECENT_ACTIVITY
+  });
+
+  // 獲取我的需求
+  const fetchMyNeeds = async () => {
+    try {
+      const data = await apiService.getMyNeeds();
+      setMyNeeds(data as any);
+    } catch (err) {
+      console.error('獲取我的需求時發生錯誤:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyNeeds();
+  }, []);
 
   // 處理按鈕點擊事件
   const handleCreateNeed = () => {
@@ -52,373 +56,225 @@ const SchoolDashboardPage = () => {
     navigate(`/dashboard/edit-need/${needId}`);
   };
 
-  if (statsLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="text-lg text-gray-600">載入中...</div>
-      </div>
-    );
-  }
-
-  if (statsError) {
-    return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="text-lg text-red-600">資料載入失敗...</div>
-      </div>
-    );
-  }
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'created':
-        return <PlusIcon className="w-5 h-5 text-blue-600" />;
-      case 'matched':
-        return <CheckCircleIcon className="w-5 h-5 text-green-600" />;
-      case 'completed':
-        return <CheckCircleIcon className="w-5 h-5 text-purple-600" />;
-      default:
-        return <ClockIcon className="w-5 h-5 text-gray-600" />;
-    }
-  };
-
-  const getActivityColor = (status: string) => {
-    switch (status) {
-      case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-      case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
-      default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
-    }
-  };
-
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* 歡迎標題 */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">歡迎回來，王校長！</h1>
-        <p className="text-gray-600 mt-2">以下是您的學校需求管理總覽</p>
-      </div>
-
-      {/* 標籤頁導航 */}
-      <div className="mb-8">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-          {[
-            { id: 'overview', label: '總覽', icon: ChartBarIcon },
-            { id: 'needs', label: '我的需求', icon: UserGroupIcon },
-            { id: 'analytics', label: '數據分析', icon: ChartBarIcon }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md font-medium transition-all duration-200 ${
-                activeTab === tab.id
-                  ? 'bg-white text-brand-blue shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              <span>{tab.label}</span>
-            </button>
-          ))}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 頁面標題 */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">學校儀表板</h1>
+          <p className="mt-2 text-gray-600">管理您的學校需求和查看統計資料</p>
         </div>
-      </div>
 
-      {/* 總覽標籤頁 */}
-      {activeTab === 'overview' && (
+        {/* 快速操作按鈕 */}
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={handleCreateNeed}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              新增需求
+            </button>
+            <button
+              onClick={() => navigate('/dashboard/my-needs')}
+              className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <EyeIcon className="h-5 w-5 mr-2" />
+              查看所有需求
+            </button>
+          </div>
+        </div>
+
+        {/* 標籤頁導航 */}
+        <div className="mb-8">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'overview', name: '總覽', count: null },
+              { id: 'needs', name: '我的需求', count: myNeeds.length },
+              { id: 'analytics', name: '分析', count: null }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.name}
+                {tab.count !== null && (
+                  <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* 標籤頁內容 */}
         <motion.div
+          key={activeTab}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.3 }}
         >
-          {/* 數據卡片 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <motion.div 
-              className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-6 border border-blue-200 relative overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              whileHover={{ scale: 1.02, y: -5 }}
-            >
-              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div className="flex items-center relative z-10">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-blue-700">總需求數</p>
-                  <motion.p 
-                    className="text-3xl font-bold text-blue-900"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                  >
-                    {stats?.totalNeeds || 0}
-                  </motion.p>
-                </div>
-                <div className="text-blue-600">
-                  <UserGroupIcon className="w-10 h-10" />
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg p-6 border border-green-200 relative overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              whileHover={{ scale: 1.02, y: -5 }}
-            >
-              <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div className="flex items-center relative z-10">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-green-700">進行中需求</p>
-                  <motion.p 
-                    className="text-3xl font-bold text-green-900"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                  >
-                    {stats?.activeNeeds || 0}
-                  </motion.p>
-                </div>
-                <div className="text-green-600">
-                  <ClockIcon className="w-10 h-10" />
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-lg p-6 border border-purple-200 relative overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              whileHover={{ scale: 1.02, y: -5 }}
-            >
-              <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div className="flex items-center relative z-10">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-purple-700">已完成需求</p>
-                  <motion.p 
-                    className="text-3xl font-bold text-purple-900"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-                  >
-                    {stats?.completedNeeds || 0}
-                  </motion.p>
-                </div>
-                <div className="text-purple-600">
-                  <CheckCircleIcon className="w-10 h-10" />
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-lg p-6 border border-orange-200 relative overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              whileHover={{ scale: 1.02, y: -5 }}
-            >
-              <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div className="flex items-center relative z-10">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-orange-700">受益學生數</p>
-                  <motion.p 
-                    className="text-3xl font-bold text-orange-900"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.6, type: "spring", stiffness: 200 }}
-                  >
-                    {stats?.studentsBenefited || 0}
-                  </motion.p>
-                </div>
-                <div className="text-orange-600">
-                  <UserGroupIcon className="w-10 h-10" />
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* 最近活動 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <motion.div 
-              className="bg-white rounded-xl shadow-lg p-6 border border-gray-200"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <h3 className="text-xl font-bold text-gray-900 mb-6">最近活動</h3>
-              <div className="space-y-4">
-                {activityLoading ? (
-                  <div className="text-center py-8">
-                    <div className="text-gray-600">載入活動中...</div>
-                  </div>
-                ) : (
-                  recentActivity?.slice(0, 5).map((activity, index) => (
-                    <motion.div
-                      key={activity.id}
-                      className={`flex items-center space-x-3 p-3 rounded-lg border ${getActivityColor(activity.status)}`}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      {getActivityIcon(activity.type)}
-                      <div className="flex-1">
-                        <p className="font-medium">{activity.title}</p>
-                        <p className="text-sm opacity-75">{activity.timestamp}</p>
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* 統計卡片 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <ApiStateRenderer state={statsState}>
+                  {(stats) => (
+                    <>
+                      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">總需求數</p>
+                            <p className="text-2xl font-bold text-gray-900">{stats.totalNeeds}</p>
+                          </div>
+                          <div className="p-3 bg-blue-100 rounded-full">
+                            <ClipboardDocumentListIcon className="h-6 w-6 text-blue-600" />
+                          </div>
+                        </div>
                       </div>
-                    </motion.div>
-                  ))
-                )}
+                      
+                      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">進行中</p>
+                            <p className="text-2xl font-bold text-gray-900">{stats.activeNeeds}</p>
+                          </div>
+                          <div className="p-3 bg-yellow-100 rounded-full">
+                            <ClockIcon className="h-6 w-6 text-yellow-600" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">已完成</p>
+                            <p className="text-2xl font-bold text-gray-900">{stats.completedNeeds}</p>
+                          </div>
+                          <div className="p-3 bg-green-100 rounded-full">
+                            <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">受益學生</p>
+                            <p className="text-2xl font-bold text-gray-900">{stats.studentsBenefited}</p>
+                          </div>
+                          <div className="p-3 bg-purple-100 rounded-full">
+                            <UserGroupIcon className="h-6 w-6 text-purple-600" />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </ApiStateRenderer>
               </div>
-            </motion.div>
 
-            {/* 快速統計 */}
-            <motion.div 
-              className="bg-white rounded-xl shadow-lg p-6 border border-gray-200"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-            >
-              <h3 className="text-xl font-bold text-gray-900 mb-6">快速統計</h3>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">平均回應時間</span>
-                  <span className="font-bold text-lg text-blue-600">{stats?.avgResponseTime || 0} 天</span>
+              {/* 最近活動 */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900">最近活動</h3>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">成功率</span>
-                  <span className="font-bold text-lg text-green-600">{stats?.successRate || 0}%</span>
+                <div className="p-6">
+                  <ApiStateRenderer state={activityState}>
+                    {(activities) => (
+                      <div className="space-y-4">
+                        {activities.map((activity) => (
+                          <div key={activity.id} className="flex items-center space-x-3">
+                            <div className={`w-2 h-2 rounded-full ${
+                              activity.status === 'success' ? 'bg-green-500' :
+                              activity.status === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                            }`} />
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-900">{activity.title}</p>
+                              <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ApiStateRenderer>
                 </div>
-                <div className="pt-4 border-t border-gray-200">
-                  <button 
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'needs' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">我的需求</h3>
+                <button
+                  onClick={handleCreateNeed}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  新增需求
+                </button>
+              </div>
+
+              {myNeeds.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">還沒有發布任何需求</h3>
+                  <p className="text-gray-500 mb-4">開始為您的學校發布第一個需求吧！</p>
+                  <button
                     onClick={handleCreateNeed}
-                    className="w-full bg-brand-blue text-white py-3 px-4 rounded-lg font-semibold hover:bg-brand-blue-dark transition-colors"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    發布新需求
+                    發布需求
                   </button>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* 我的需求標籤頁 */}
-      {activeTab === 'needs' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">我的需求</h2>
-            <button 
-              onClick={handleCreateNeed}
-              className="bg-brand-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-blue-dark transition-colors flex items-center space-x-2"
-            >
-              <PlusIcon className="w-5 h-5" />
-              <span>新增需求</span>
-            </button>
-          </div>
-
-          {needsLoading ? (
-            <div className="text-center py-12">
-              <div className="text-lg text-gray-600">載入需求中...</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {myNeeds.map((need) => (
+                    <NeedCard 
+                      key={need.id} 
+                      need={need} 
+                      variant="admin" 
+                      onDelete={(id) => {
+                        if (window.confirm('確定要刪除這個需求嗎？')) {
+                          // 這裡可以添加刪除邏輯
+                          console.log('刪除需求:', id);
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          ) : needsError ? (
-            <div className="text-center py-12">
-              <div className="text-lg text-red-600">載入失敗，請稍後再試</div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {myNeeds?.map((need, index) => (
-                <motion.div
-                  key={need.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div className="relative group">
-                    <NeedCard need={need} variant="admin" />
-                    <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleViewNeed(need.id)}
-                        className="bg-white/90 hover:bg-white p-2 rounded-lg shadow-lg transition-colors"
-                        title="查看需求"
-                      >
-                        <EyeIcon className="w-4 h-4 text-gray-600" />
-                      </button>
-                      <button 
-                        onClick={() => handleEditNeed(need.id)}
-                        className="bg-white/90 hover:bg-white p-2 rounded-lg shadow-lg transition-colors"
-                        title="編輯需求"
-                      >
-                        <PencilIcon className="w-4 h-4 text-gray-600" />
-                      </button>
-                    </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">需求分析</h3>
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
                   </div>
-                </motion.div>
-              ))}
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">分析功能開發中</h4>
+                  <p className="text-gray-500">我們正在開發詳細的分析功能，敬請期待！</p>
+                </div>
+              </div>
             </div>
           )}
         </motion.div>
-      )}
-
-      {/* 數據分析標籤頁 */}
-      {activeTab === 'analytics' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">數據分析</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">需求狀態分佈</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">進行中</span>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${(stats?.activeNeeds || 0) / (stats?.totalNeeds || 1) * 100}%` }}></div>
-                    </div>
-                    <span className="font-semibold">{stats?.activeNeeds || 0}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">已完成</span>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(stats?.completedNeeds || 0) / (stats?.totalNeeds || 1) * 100}%` }}></div>
-                    </div>
-                    <span className="font-semibold">{stats?.completedNeeds || 0}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">效能指標</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">平均回應時間</span>
-                  <span className="font-bold text-blue-600">{stats?.avgResponseTime || 0} 天</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">成功率</span>
-                  <span className="font-bold text-green-600">{stats?.successRate || 0}%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">受益學生</span>
-                  <span className="font-bold text-purple-600">{stats?.studentsBenefited || 0} 人</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
+      </div>
     </div>
   );
 };

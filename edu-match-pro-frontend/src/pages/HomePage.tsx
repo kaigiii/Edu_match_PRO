@@ -1,4 +1,5 @@
-import { useApi } from '../hooks/useApi';
+import { useApiState, ApiStateRenderer } from '../hooks/useApiState';
+import { API_ENDPOINTS } from '../config/api';
 import type { SchoolNeed } from '../types';
 
 // 匯入我們剛剛創建的所有區塊元件
@@ -10,8 +11,9 @@ import NeedsCarousel from './HomePage/NeedsCarousel';
 import CtaSection from './HomePage/CtaSection';
 
 const HomePage = () => {
-  // 數據獲取邏輯保留在父元件中
-  const { data: needs, isUsingFallback } = useApi<SchoolNeed[]>('http://localhost:3001/school_needs');
+  const state = useApiState<SchoolNeed[]>({
+    url: API_ENDPOINTS.SCHOOL_NEEDS
+  });
 
   return (
     <div className="relative">
@@ -19,7 +21,9 @@ const HomePage = () => {
       <MapSection />
       <ValueSection />
       <SolutionSection />
-      <NeedsCarousel needs={needs} />
+      <ApiStateRenderer state={state}>
+        {(needs) => <NeedsCarousel needs={needs} />}
+      </ApiStateRenderer>
       <CtaSection />
     </div>
   );

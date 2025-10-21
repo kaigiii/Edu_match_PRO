@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { HomePageAnimations } from './animation.config';
-import { getImagePath } from '../../utils/paths';
+import { getImagePath } from '../../utils/imageUtils';
 
 const SolutionSection = () => {
   const mainRef = useRef<HTMLElement>(null);
@@ -57,83 +57,59 @@ const SolutionSection = () => {
     stages.stage1.end
   ], [1, 1, 0]);
   const ui1Y = useTransform(scrollYProgress, [stages.stage1.start, stages.stage1.end], [0, -50]);
-  const ui1Scale = useTransform(scrollYProgress, [stages.stage1.start, stages.stage1.end], [1, 0.95]);
+  const ui1Scale = useTransform(scrollYProgress, [stages.stage1.start, stages.stage1.end], [1, 0.985]);
   
   const ui2Opacity = useTransform(scrollYProgress, [
     stages.stage2.start, 
-    stages.stage2.start + fadeDuration, 
-    stages.stage2.end - fadeDuration, 
+    stages.stage2.start + fadeDuration * 0.5, 
+    stages.stage2.end - fadeDuration * 0.5, 
     stages.stage2.end
   ], [0, 1, 1, 0]);
-  const ui2Y = useTransform(scrollYProgress, [
-    stages.stage2.start, 
-    stages.stage2.start + fadeDuration, 
-    stages.stage2.end - fadeDuration, 
-    stages.stage2.end
-  ], [100, 0, 0, -50]);
   const ui2Scale = useTransform(scrollYProgress, [
     stages.stage2.start, 
-    stages.stage2.start + fadeDuration, 
+    stages.stage2.start + fadeDuration * 0.5, 
     stages.stage2.end - fadeDuration, 
     stages.stage2.end
-  ], [0.8, 1, 1, 0.95]);
+  ], [0.98, 1, 1, 0.99]);
   
   const ui3Opacity = useTransform(scrollYProgress, [
     stages.stage3.start, 
-    stages.stage3.start + fadeDuration, 
-    stages.stage3.end - fadeDuration, 
+    stages.stage3.start + fadeDuration * 0.5, 
+    stages.stage3.end - fadeDuration * 0.5, 
     stages.stage3.end
   ], [0, 1, 1, 0]);
-  const ui3Y = useTransform(scrollYProgress, [
-    stages.stage3.start, 
-    stages.stage3.start + fadeDuration, 
-    stages.stage3.end - fadeDuration, 
-    stages.stage3.end
-  ], [100, 0, 0, -50]);
   const ui3Scale = useTransform(scrollYProgress, [
     stages.stage3.start, 
-    stages.stage3.start + fadeDuration, 
+    stages.stage3.start + fadeDuration * 0.5, 
     stages.stage3.end - fadeDuration, 
     stages.stage3.end
-  ], [0.8, 1, 1, 0.95]);
+  ], [0.98, 1, 1, 0.99]);
   
   const ui4Opacity = useTransform(scrollYProgress, [
     stages.stage4.start, 
-    stages.stage4.start + fadeDuration, 
-    stages.stage4.end - fadeDuration, 
+    stages.stage4.start + fadeDuration * 0.5, 
+    stages.stage4.end - fadeDuration * 0.5, 
     stages.stage4.end
   ], [0, 1, 1, 0]);
-  const ui4Y = useTransform(scrollYProgress, [
-    stages.stage4.start, 
-    stages.stage4.start + fadeDuration, 
-    stages.stage4.end - fadeDuration, 
-    stages.stage4.end
-  ], [100, 0, 0, -50]);
   const ui4Scale = useTransform(scrollYProgress, [
     stages.stage4.start, 
-    stages.stage4.start + fadeDuration, 
+    stages.stage4.start + fadeDuration * 0.5, 
     stages.stage4.end - fadeDuration, 
     stages.stage4.end
-  ], [0.8, 1, 1, 0.95]);
+  ], [0.98, 1, 1, 0.99]);
   
   const ui5Opacity = useTransform(scrollYProgress, [
     stages.stage5.start, 
-    stages.stage5.start + fadeDuration, 
-    stages.stage5.end - fadeDuration, 
+    stages.stage5.start + fadeDuration * 0.5, 
+    stages.stage5.end - fadeDuration * 0.5, 
     stages.stage5.end
   ], [0, 1, 1, 0]);
-  const ui5Y = useTransform(scrollYProgress, [
-    stages.stage5.start, 
-    stages.stage5.start + fadeDuration, 
-    stages.stage5.end - fadeDuration, 
-    stages.stage5.end
-  ], [100, 0, 0, -50]);
   const ui5Scale = useTransform(scrollYProgress, [
     stages.stage5.start, 
-    stages.stage5.start + fadeDuration, 
+    stages.stage5.start + fadeDuration * 0.5, 
     stages.stage5.end - fadeDuration, 
     stages.stage5.end
-  ], [0.8, 1, 1, 0.95]);
+  ], [0.98, 1, 1, 0.99]);
 
   return (
     <section ref={mainRef} className="h-[400vh] relative">
@@ -148,14 +124,14 @@ const SolutionSection = () => {
       >
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center">
-            {/* 右側 - 真實產品UI截圖 - 卡片式堆疊滑動 */}
-            <div className="relative h-80 sm:h-96 lg:h-[500px] xl:h-[600px] overflow-hidden">
+            {/* 右側 - 真實產品UI截圖 - 卡片式堆疊滑動（行動版降低高度避免擠壓） */}
+            <div className="relative h-64 sm:h-80 lg:h-[500px] xl:h-[600px] overflow-hidden">
               {/* UI卡片1: 學校刊登需求表單 */}
               <motion.div
-                className="absolute inset-0 w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
+                className="absolute inset-0 flex items-center justify-center w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
                 style={{
                   opacity: ui1Opacity,
-                  transform: `translateY(${ui1Y}px) scale(${ui1Scale})`
+                  transform: `scale(${ui1Scale})`
                 }}
               >
                 <div className="w-full h-full bg-gradient-to-br from-brand-blue-light to-white p-6">
@@ -184,11 +160,10 @@ const SolutionSection = () => {
               
               {/* UI卡片2: AI智慧推薦儀表板 */}
               <motion.div
-                className="absolute inset-0 w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
+                className="absolute inset-0 flex items-center justify-center w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
                 style={{
                   opacity: ui2Opacity,
-                  transform: `translateY(${ui2Y}px)`,
-                  scale: ui2Scale
+                  transform: `scale(${ui2Scale})`
                 }}
               >
                 <div className="w-full h-full bg-gradient-to-br from-brand-orange-light to-white p-6">
@@ -224,11 +199,10 @@ const SolutionSection = () => {
               
               {/* UI卡片3: 即時通知系統 */}
               <motion.div
-                className="absolute inset-0 w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
+                className="absolute inset-0 flex items-center justify-center w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
                 style={{
                   opacity: ui3Opacity,
-                  transform: `translateY(${ui3Y}px)`,
-                  scale: ui3Scale
+                  transform: `scale(${ui3Scale})`
                 }}
               >
                 <div className="w-full h-full bg-gradient-to-br from-green-50 to-white p-6">
@@ -260,11 +234,10 @@ const SolutionSection = () => {
               
               {/* UI卡片4: 社群互動平台 */}
               <motion.div
-                className="absolute inset-0 w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
+                className="absolute inset-0 flex items-center justify-center w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
                 style={{
                   opacity: ui4Opacity,
-                  transform: `translateY(${ui4Y}px)`,
-                  scale: ui4Scale
+                  transform: `scale(${ui4Scale})`
                 }}
               >
                 <div className="w-full h-full bg-gradient-to-br from-purple-50 to-white p-6">
@@ -298,11 +271,10 @@ const SolutionSection = () => {
               
               {/* UI卡片5: 數據分析儀表板 */}
               <motion.div
-                className="absolute inset-0 w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
+                className="absolute inset-0 flex items-center justify-center w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
                 style={{
                   opacity: ui5Opacity,
-                  transform: `translateY(${ui5Y}px)`,
-                  scale: ui5Scale
+                  transform: `scale(${ui5Scale})`
                 }}
               >
                 <div className="w-full h-full bg-gradient-to-br from-blue-50 to-white p-6">
@@ -329,11 +301,11 @@ const SolutionSection = () => {
               </motion.div>
             </div>
             
-            {/* 左側 - 文字內容 */}
-            <div className="relative h-full">
+            {/* 左側 - 文字內容（固定顯示位置） */}
+            <div className="relative h-[260px] sm:h-[300px] lg:h-full">
               {/* 問題描述 */}
               <motion.div 
-                className="absolute inset-0 flex flex-col justify-center text-center lg:text-left"
+                className="absolute left-0 right-0 top-1/2 -translate-y-1/2 text-center lg:text-left"
                 style={{ opacity: text1Opacity }}
               >
                 <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 lg:mb-8 drop-shadow-2xl">
@@ -347,7 +319,7 @@ const SolutionSection = () => {
               
               {/* 解法1: 智慧配對系統 */}
               <motion.div 
-                className="absolute inset-0 flex flex-col justify-center text-center lg:text-left"
+                className="absolute left-0 right-0 top-1/2 -translate-y-1/2 text-center lg:text-left"
                 style={{ opacity: text2Opacity }}
               >
                 <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 lg:mb-6 drop-shadow-xl">
@@ -361,7 +333,7 @@ const SolutionSection = () => {
               
               {/* 解法2: 即時通知系統 */}
               <motion.div 
-                className="absolute inset-0 flex flex-col justify-center text-center lg:text-left"
+                className="absolute left-0 right-0 top-1/2 -translate-y-1/2 text-center lg:text-left"
                 style={{ opacity: text3Opacity }}
               >
                 <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 lg:mb-6 drop-shadow-xl">
@@ -375,7 +347,7 @@ const SolutionSection = () => {
 
               {/* 解法3: 社群互動平台 */}
               <motion.div 
-                className="absolute inset-0 flex flex-col justify-center text-center lg:text-left"
+                className="absolute left-0 right-0 top-1/2 -translate-y-1/2 text-center lg:text-left"
                 style={{ opacity: text4Opacity }}
               >
                 <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 lg:mb-6 drop-shadow-xl">
@@ -389,7 +361,7 @@ const SolutionSection = () => {
 
               {/* 解法4: 數據分析與追蹤 */}
               <motion.div 
-                className="absolute inset-0 flex flex-col justify-center text-center lg:text-left"
+                className="absolute left-0 right-0 top-1/2 -translate-y-1/2 text-center lg:text-left"
                 style={{ opacity: text5Opacity }}
               >
                 <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 lg:mb-6 drop-shadow-xl">

@@ -57,12 +57,12 @@ const AboutPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <motion.div 
-        className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white py-24"
+        className="relative bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 text-white py-24"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        <div className="absolute inset-0 bg-black opacity-30"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/20 to-teal-900/20"></div>
         <div className="relative container mx-auto px-4 text-center">
           <motion.h1 
             className="text-5xl font-bold mb-6"

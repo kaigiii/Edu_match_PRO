@@ -4,10 +4,13 @@
  */
 
 import { currentConfig, createApiUrl, checkApiHealth } from '../config/api';
+import { PROTECTED_ENDPOINTS, API_ENDPOINT_MAP, ERROR_CONFIG, AUTH_CONFIG } from '../config/apiConfig';
+import { demoAuthService } from './demoAuthService';
 import type { 
   SchoolNeed, 
   CompanyDashboardStats, 
   SchoolDashboardStats, 
+  PlatformStats,
   RecentProject, 
   ImpactStory, 
   CompanyDonation, 
@@ -17,6 +20,8 @@ import type {
 class ApiService {
   private apiAvailable: boolean | null = null;
   private fallbackData: any = {};
+  private schoolToken?: string;
+  private companyToken?: string;
 
   constructor() {
     this.initializeFallbackData();
@@ -27,14 +32,15 @@ class ApiService {
     try {
       const staticData = await import('../data/staticData');
       this.fallbackData = {
-        schoolNeeds: staticData.schoolNeeds,
         companyDashboardStats: staticData.companyDashboardStats,
         schoolDashboardStats: staticData.schoolDashboardStats,
-        recentProjects: staticData.recentProjects,
-        impactStories: staticData.impactStories,
-        myNeeds: staticData.myNeeds,
-        companyDonations: staticData.companyDonations,
-        recentActivity: staticData.recentActivity,
+        // 其他數據統一使用後端 API，不再使用靜態備用數據
+        schoolNeeds: [],
+        recentProjects: [],
+        impactStories: [],
+        myNeeds: [],
+        companyDonations: [],
+        recentActivity: [],
       };
     } catch (error) {
       console.error('Failed to load fallback data:', error);
@@ -48,8 +54,9 @@ class ApiService {
     }
 
     if (!currentConfig.useLocalFallback) {
-      this.apiAvailable = false;
-      return false;
+      // 最佳實踐：關閉本地降級時，不做健康檢查，直接使用後端 API
+      this.apiAvailable = true;
+      return true;
     }
 
     try {
@@ -68,10 +75,29 @@ class ApiService {
     
     if (isApiReady) {
       try {
+        // 使用配置化的端點保護邏輯
+        const schoolProtected = new Set(PROTECTED_ENDPOINTS.school);
+        const companyProtected = new Set(PROTECTED_ENDPOINTS.company);
+
+        let authHeaders: Record<string, string> = {};
+        
+        // 檢查是否有存儲的認證 token
+        const storedToken = localStorage.getItem(AUTH_CONFIG.TOKEN_STORAGE_KEY);
+        if (storedToken && (schoolProtected.has(endpoint) || companyProtected.has(endpoint))) {
+          authHeaders = { Authorization: `Bearer ${storedToken}` };
+        } else if (schoolProtected.has(endpoint)) {
+          const token = await this.ensureToken('school');
+          authHeaders = { Authorization: `Bearer ${token}` };
+        } else if (companyProtected.has(endpoint)) {
+          const token = await this.ensureToken('company');
+          authHeaders = { Authorization: `Bearer ${token}` };
+        }
+
         const response = await fetch(createApiUrl(endpoint), {
           ...options,
           headers: {
             'Content-Type': 'application/json',
+            ...authHeaders,
             ...options.headers,
           },
         });
@@ -92,6 +118,25 @@ class ApiService {
     } else {
       // 直接使用本地數據
       return this.getFallbackData<T>(endpoint);
+    }
+  }
+
+  // 取得並快取模擬用戶 token
+  private async ensureToken(role: 'school' | 'company'): Promise<string> {
+    if (role === 'school' && this.schoolToken) return this.schoolToken;
+    if (role === 'company' && this.companyToken) return this.companyToken;
+
+    try {
+      // 使用新的模擬登入服務
+      const response = await demoAuthService.demoLogin(role);
+      const token = response.token;
+      
+      if (role === 'school') this.schoolToken = token;
+      else this.companyToken = token;
+      return token;
+    } catch (error) {
+      console.error(`Failed to get demo token for ${role}:`, error);
+      throw new Error(`Demo authentication failed for ${role}`);
     }
   }
 
@@ -144,6 +189,11 @@ class ApiService {
     return this.request<SchoolNeed[]>('/school_needs');
   }
 
+  // 企業需求相關 API（包括模擬用戶需求）
+  async getCompanyNeeds(): Promise<SchoolNeed[]> {
+    return this.request<SchoolNeed[]>('/company_needs');
+  }
+
   async getSchoolNeedById(id: string): Promise<SchoolNeed> {
     console.log('ApiService: getSchoolNeedById called with id:', id);
     const result = await this.request<SchoolNeed>(`/school_needs/${id}`);
@@ -180,9 +230,25 @@ class ApiService {
     return this.request<SchoolDashboardStats>('/school_dashboard_stats');
   }
 
+  async getPlatformStats(): Promise<PlatformStats> {
+    return this.request<PlatformStats>('/platform_stats');
+  }
+
   // 推薦和項目 API
   async getRecommendedNeeds(): Promise<SchoolNeed[]> {
     return this.request<SchoolNeed[]>('/ai_recommended_needs');
+  }
+
+  async getCompanyRecommendedNeeds(): Promise<SchoolNeed[]> {
+    return this.request<SchoolNeed[]>('/company_ai_recommended_needs');
+  }
+
+  // 贊助專案 API
+  async sponsorNeed(needId: string, sponsorData: { donation_type: string; description: string }): Promise<any> {
+    return this.request<any>(`/sponsor_need/${needId}`, {
+      method: 'POST',
+      body: JSON.stringify(sponsorData),
+    });
   }
 
   async getRecentProjects(): Promise<RecentProject[]> {

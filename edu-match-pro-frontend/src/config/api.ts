@@ -10,9 +10,9 @@ const isDevelopment = import.meta.env.DEV;
 export const API_CONFIG = {
   // 開發環境：使用後端 API
   development: {
-    baseURL: 'http://localhost:3001',
+    baseURL: 'http://localhost:8000',
     timeout: 10000,
-    useLocalFallback: true, // 如果 API 失敗，使用本地數據
+    useLocalFallback: false, // 最佳實踐：開發環境也直接走後端 API
   },
   // 生產環境：使用靜態數據
   production: {
@@ -29,14 +29,22 @@ export const currentConfig = isDevelopment ? API_CONFIG.development : API_CONFIG
 export const API_ENDPOINTS = {
   // 學校需求相關
   SCHOOL_NEEDS: '/school_needs',
-  SCHOOL_NEEDS_BY_ID: (id: string) => `/school_needs/${id}`,
+  COMPANY_NEEDS: '/company_needs',
+  SCHOOL_NEEDS_BY_ID: (id: string) => {
+    if (!id || id === 'undefined') {
+      return '';
+    }
+    return `/school_needs/${id}`;
+  },
   
   // 儀表板統計
   COMPANY_DASHBOARD_STATS: '/company_dashboard_stats',
   SCHOOL_DASHBOARD_STATS: '/school_dashboard_stats',
+  PLATFORM_STATS: '/platform_stats',
   
   // 推薦和項目
   AI_RECOMMENDED_NEEDS: '/ai_recommended_needs',
+  COMPANY_AI_RECOMMENDED_NEEDS: '/company_ai_recommended_needs',
   RECENT_PROJECTS: '/recent_projects',
   
   // 影響力故事

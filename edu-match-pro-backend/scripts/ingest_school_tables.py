@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app.core.config import settings
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 FARAWAY_PATH = os.path.join(DATA_DIR, "faraway3.csv")
 EDU_B_1_4_PATH = os.path.join(DATA_DIR, "edu_B_1_4.csv")
 
@@ -250,5 +250,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-

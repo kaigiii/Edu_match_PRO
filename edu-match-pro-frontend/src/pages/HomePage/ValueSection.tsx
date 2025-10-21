@@ -85,7 +85,7 @@ const ValueSection = () => {
         }
       });
       
-      // 卡片動畫
+      // 卡片動畫 - 提早觸發
       cardRefs.current.forEach((card, index) => {
         gsap.from(card, {
           y: 100,
@@ -93,10 +93,10 @@ const ValueSection = () => {
           scale: 0.8,
           duration: 0.8,
           ease: 'power3.out',
-          delay: index * 0.2,
+          delay: index * 0.1, // 減少延遲時間
           scrollTrigger: {
             trigger: card,
-            start: "top 90%",
+            start: "top 95%", // 提早觸發
             end: "bottom 10%",
             toggleActions: "play none none reverse"
           }

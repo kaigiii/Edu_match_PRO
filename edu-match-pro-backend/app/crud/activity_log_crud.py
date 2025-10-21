@@ -53,3 +53,12 @@ async def get_recent_activity_logs(
         .limit(limit)
     )
     return result.scalars().all()
+
+
+async def get_recent_activity(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    limit: int = 20
+) -> List[ActivityLog]:
+    """獲取用戶的最近活動記錄"""
+    return await get_activity_logs_by_user(session, user_id, limit)

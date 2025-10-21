@@ -15,7 +15,10 @@ export default defineConfig(({ mode }) => ({
           router: ['react-router-dom'],
           motion: ['framer-motion'],
           charts: ['recharts'],
-          ui: ['@headlessui/react', '@heroicons/react']
+          ui: ['@headlessui/react', '@heroicons/react'],
+          utils: ['d3', 'topojson-client'],
+          forms: ['react-hook-form'],
+          notifications: ['react-toastify']
         }
       }
     }
