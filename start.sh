@@ -3,8 +3,60 @@
 # Edu-Match-Pro 全棧啟動腳本
 echo "🚀 啟動 Edu-Match-Pro 全棧應用..."
 
+# 停止所有現有進程
+stop_existing_processes() {
+    echo ""
+    echo "🧹 清理現有進程..."
+    
+    # 停止佔用 3001 端口的進程 (後端)
+    backend_pid=$(lsof -ti:3001)
+    if [ ! -z "$backend_pid" ]; then
+        echo "   停止佔用 3001 端口的進程 (PID: $backend_pid)..."
+        kill -9 $backend_pid 2>/dev/null
+        sleep 1
+    fi
+    
+    # 停止佔用 5173-5180 端口的進程 (前端)
+    for port in {5173..5180}; do
+        frontend_pid=$(lsof -ti:$port)
+        if [ ! -z "$frontend_pid" ]; then
+            echo "   停止佔用 $port 端口的進程 (PID: $frontend_pid)..."
+            kill -9 $frontend_pid 2>/dev/null
+        fi
+    done
+    
+    # 停止 uvicorn (後端)
+    if pgrep -f "uvicorn main:app" > /dev/null; then
+        echo "   停止 uvicorn 進程..."
+        pkill -9 -f "uvicorn main:app"
+        sleep 1
+    fi
+    
+    # 停止 vite (前端)
+    if pgrep -f "vite" > /dev/null; then
+        echo "   停止 vite 進程..."
+        pkill -9 -f "vite"
+        sleep 1
+    fi
+    
+    # 停止舊的 start.sh 進程
+    current_pid=$$
+    for pid in $(pgrep -f "start.sh"); do
+        if [ "$pid" != "$current_pid" ]; then
+            echo "   停止舊的啟動腳本進程 (PID: $pid)..."
+            kill -9 $pid 2>/dev/null
+        fi
+    done
+    
+    # 額外等待，確保端口釋放
+    sleep 2
+    
+    echo "✅ 清理完成"
+}
+
 # 檢查必要工具
 check_requirements() {
+    echo ""
     echo "🔍 檢查環境依賴..."
     
     if ! command -v python3 &> /dev/null; then
@@ -124,6 +176,7 @@ trap cleanup SIGINT SIGTERM
 
 # 主執行流程
 main() {
+    stop_existing_processes
     check_requirements
     start_backend
     start_frontend

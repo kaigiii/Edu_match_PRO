@@ -9,7 +9,8 @@ export const PROTECTED_ENDPOINTS = {
   school: [
     '/my_needs',
     '/school_dashboard_stats',
-    '/school_needs'
+    '/school_needs',
+    '/auth/users/me'
   ],
   // 企業用戶專用端點
   company: [
@@ -18,7 +19,12 @@ export const PROTECTED_ENDPOINTS = {
     '/recent_activity',
     '/company_needs',
     '/company_ai_recommended_needs',
-    '/sponsor_need'
+    '/sponsor_need',
+    '/auth/users/me'
+  ],
+  // 通用認證端點（不分角色）
+  common: [
+    '/auth/users/me'
   ]
 } as const;
 

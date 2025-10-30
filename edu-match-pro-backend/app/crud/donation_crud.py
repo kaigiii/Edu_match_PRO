@@ -73,12 +73,15 @@ async def create_donation(session: AsyncSession, donation_in: DonationCreate, co
 
 async def get_donations_by_company(session: AsyncSession, company_id: uuid.UUID) -> List[Donation]:
     """獲取特定企業的所有捐贈專案"""
+    from app.models.user import User
+    from app.models.profile import Profile
+    
     result = await session.execute(
         select(Donation)
         .where(Donation.company_id == company_id)
         .options(
             selectinload(Donation.need),
-            selectinload(Donation.company)
+            selectinload(Donation.company).selectinload(User.profile)
         )
         .order_by(Donation.created_at.desc())
     )
@@ -87,12 +90,14 @@ async def get_donations_by_company(session: AsyncSession, company_id: uuid.UUID)
 
 async def get_donation_by_id(session: AsyncSession, donation_id: uuid.UUID) -> Optional[Donation]:
     """根據 ID 獲取捐贈專案"""
+    from app.models.user import User
+    
     result = await session.execute(
         select(Donation)
         .where(Donation.id == donation_id)
         .options(
             selectinload(Donation.need),
-            selectinload(Donation.company)
+            selectinload(Donation.company).selectinload(User.profile)
         )
     )
     return result.scalar_one_or_none()

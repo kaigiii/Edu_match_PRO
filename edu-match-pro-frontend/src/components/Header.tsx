@@ -1,9 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../contexts/AuthContext';
+import apiService from '../services/apiService';
 
 const Header = () => {
   const { isAuthenticated, userRole, logout } = useAuth();
@@ -11,10 +12,31 @@ const Header = () => {
   const { scrollY } = useScroll();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userName, setUserName] = useState<string>('');
   
   useMotionValueEvent(scrollY, "change", (latest) => {
     setIsScrolled(latest > 50);
   });
+  
+  // 載入使用者資料
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (isAuthenticated) {
+        try {
+          const response = await apiService.getCurrentUser();
+          if (response?.profile?.contact_person) {
+            setUserName(response.profile.contact_person);
+          } else {
+            setUserName(userRole === 'school' ? '使用者' : '使用者');
+          }
+        } catch (error) {
+          console.error('載入使用者資料失敗:', error);
+          setUserName(userRole === 'school' ? '使用者' : '使用者');
+        }
+      }
+    };
+    loadUserData();
+  }, [isAuthenticated, userRole]);
   
   const handleLogout = () => {
     logout();
@@ -168,7 +190,7 @@ const Header = () => {
                 <Menu.Items className="absolute z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none right-0 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)] overflow-hidden">
                   <div className="py-1">
                     <div className="px-4 py-2 text-sm text-neutral-900 border-b">
-                      <p className="font-medium">你好，{userRole === 'school' ? '王老師' : '陳經理'}</p>
+                      <p className="font-medium">你好，{userName || (userRole === 'school' ? '使用者' : '使用者')}</p>
                     </div>
                     <Menu.Item>{({ active }) => (<Link to={userRole === 'school' ? '/dashboard/school' : '/dashboard/company'} className={`${active ? 'bg-gray-100' : ''} block px-4 py-2 text-sm text-neutral-500`}>我的儀表板</Link>)}</Menu.Item>
                     <Menu.Item>{({ active }) => (<button onClick={handleLogout} className={`${active ? 'bg-gray-100' : ''} w-full text-left block px-4 py-2 text-sm text-red-600`}>登出</button>)}</Menu.Item>

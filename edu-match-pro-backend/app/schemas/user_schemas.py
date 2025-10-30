@@ -3,6 +3,7 @@ from pydantic import EmailStr
 from datetime import datetime
 from typing import Optional
 import uuid
+from app.schemas.profile_schemas import ProfileCreate, ProfilePublic
 
 
 class UserCreate(SQLModel):
@@ -10,6 +11,8 @@ class UserCreate(SQLModel):
     email: EmailStr
     password: str
     role: str
+    # 個人檔案資料
+    profile: ProfileCreate
 
 
 class UserPublic(SQLModel):
@@ -18,6 +21,7 @@ class UserPublic(SQLModel):
     email: EmailStr
     role: str
     created_at: datetime
+    profile: Optional[ProfilePublic] = None
     
     class Config:
         from_attributes = True

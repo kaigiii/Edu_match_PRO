@@ -85,20 +85,22 @@ const ValueSection = () => {
         }
       });
       
-      // 卡片動畫 - 提早觸發
+      // 卡片動畫 - 提早觸發並加快節奏
+      // 調整參數使卡片在捲動到更高的位置時就開始出現，並減少延遲與動作時間
       cardRefs.current.forEach((card, index) => {
         gsap.from(card, {
-          y: 100,
+          y: 60,
           opacity: 0,
-          scale: 0.8,
-          duration: 0.8,
+          scale: 0.92,
+          duration: 0.65,
           ease: 'power3.out',
-          delay: index * 0.1, // 減少延遲時間
+          delay: index * 0.06, // 更短的逐項延遲
           scrollTrigger: {
             trigger: card,
-            start: "top 95%", // 提早觸發
-            end: "bottom 10%",
-            toggleActions: "play none none reverse"
+            start: "top 85%", // 更早觸發
+            end: "bottom 20%",
+            toggleActions: "play none none reverse",
+            // 開發時可打開 markers 幫助調整位置：markers: true
           }
         });
       });

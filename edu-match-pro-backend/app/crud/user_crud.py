@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional
 from app.models.user import User, UserRole
+from app.models.profile import Profile
 from app.schemas.user_schemas import UserCreate
 from app.core.security import get_password_hash, verify_password
 
@@ -13,7 +14,7 @@ async def get_user_by_email(session: AsyncSession, email: str) -> Optional[User]
 
 
 async def create_user(session: AsyncSession, user_in: UserCreate) -> User:
-    """建立新使用者"""
+    """建立新使用者及個人檔案"""
     # 將明文密碼進行雜湊處理
     hashed_password = get_password_hash(user_in.password)
     
@@ -28,6 +29,26 @@ async def create_user(session: AsyncSession, user_in: UserCreate) -> User:
     session.add(db_user)
     await session.commit()
     await session.refresh(db_user)
+    
+    # 建立對應的個人檔案
+    db_profile = Profile(
+        user_id=db_user.id,
+        organization_name=user_in.profile.organization_name,
+        contact_person=user_in.profile.contact_person,
+        position=user_in.profile.position,
+        phone=user_in.profile.phone,
+        address=user_in.profile.address,
+        tax_id=user_in.profile.tax_id,
+        bio=user_in.profile.bio,
+        avatar_url=user_in.profile.avatar_url
+    )
+    
+    session.add(db_profile)
+    await session.commit()
+    await session.refresh(db_profile)
+    
+    # 重新加載用戶以包含 profile 關聯
+    await session.refresh(db_user, ["profile"])
     
     return db_user
 

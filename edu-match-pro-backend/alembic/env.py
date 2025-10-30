@@ -63,10 +63,16 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    # 從環境變數獲取同步資料庫 URL
+    # 從環境變數獲取資料庫 URL，支持同步和異步格式
     database_url = os.getenv("DATABASE_URL_SYNC")
     if not database_url:
-        raise ValueError("DATABASE_URL_SYNC environment variable is not set")
+        # 如果沒有設置 DATABASE_URL_SYNC，嘗試使用 DATABASE_URL 並轉換為同步格式
+        async_url = os.getenv("DATABASE_URL")
+        if async_url:
+            # 將 postgresql+asyncpg:// 轉換為 postgresql://
+            database_url = async_url.replace("postgresql+asyncpg://", "postgresql://")
+        else:
+            raise ValueError("Neither DATABASE_URL_SYNC nor DATABASE_URL environment variable is set")
     
     # 設定配置
     configuration = config.get_section(config.config_ini_section, {})

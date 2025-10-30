@@ -13,16 +13,16 @@ gsap.registerPlugin(ScrollTrigger);
 
 // 手動設定 10 個光點位置（使用比例定位，範圍 0-100%）
 const lightPositions = [
-  { id: 1, x: 15, y: 13, status: 'urgent' },   // 台東縣 (15%, 13%)
-  { id: 2, x: 25, y: 10, status: 'normal' },   // 花蓮縣 (25%, 10%)
-  { id: 3, x: 19, y: 33, status: 'urgent' },   // 屏東縣 (19%, 33%)
-  { id: 4, x: 38, y: 25, status: 'normal' },   // 南投縣 (38%, 25%)
-  { id: 5, x: 35, y: 30, status: 'normal' },   // 嘉義縣 (35%, 30%)
-  { id: 6, x: 23, y: 17, status: 'urgent' },   // 新竹縣 (23%, 17%)
-  { id: 7, x: 28, y: 20, status: 'normal' },   // 苗栗縣 (28%, 20%)
-  { id: 8, x: 44, y: 13, status: 'normal' },   // 宜蘭縣 (44%, 13%)
-  { id: 9, x: 31, y: 33, status: 'urgent' },   // 高雄市 (31%, 33%)
-  { id: 10, x: 80, y: 80, status: 'normal' }   // 台中市 (40%, 20%)
+  { id: 1, x: 65, y: 43, status: 'urgent' },   // 台東縣 (15%, 13%)
+  { id: 2, x: 65, y: 40, status: 'normal' },   // 花蓮縣 (25%, 10%)
+  { id: 3, x: 69, y: 53, status: 'urgent' },   // 屏東縣 (19%, 33%)
+  { id: 4, x: 68, y: 65, status: 'normal' },   // 南投縣 (38%, 25%)
+  { id: 5, x: 55, y: 70, status: 'normal' },   // 嘉義縣 (35%, 30%)
+  { id: 6, x: 73, y: 77, status: 'urgent' },   // 新竹縣 (23%, 17%)
+  { id: 7, x: 78, y: 40, status: 'normal' },   // 苗栗縣 (28%, 20%)
+  { id: 8, x: 54, y: 53, status: 'normal' },   // 宜蘭縣 (44%, 13%)
+  { id: 9, x: 81, y: 43, status: 'urgent' },   // 高雄市 (31%, 33%)
+  { id: 10, x: 80, y: 70, status: 'normal' }   // 台中市 (40%, 20%)
 ];
 
 const MapSection = () => {
@@ -72,38 +72,39 @@ const MapSection = () => {
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: sectionRef.current,
-        start: "top 70%",
+        // 提早觸發並在到達時立即播放動畫（移除 scrub 以避免隨滾動慢慢推進）
+        start: "top 85%",
         end: "bottom 30%",
-        scrub: 1,
+        scrub: false,
         toggleActions: "play none none reverse"
       }
     });
 
-    // 標題和描述淡入
+    // 標題和描述淡入（立即播放，減短時間讓視覺回饋更快）
     tl.to([titleRef.current, descriptionRef.current], {
       opacity: 1,
       y: 0,
-      duration: 0.8,
+      duration: 0.6,
       ease: "power2.out"
     }, 0);
 
-    // 地圖淡入
+    // 地圖淡入 - 提前開始以便視覺上更接近標題出現
     tl.to(mapRef.current, {
       opacity: 1,
       scale: 1,
-      duration: 0.6,
+      duration: 0.5,
       ease: "power2.out"
-    }, 0.2);
+    }, 0.05);
 
     // 移除光點 GSAP 動畫，光點直接顯示
 
-    // 統計數據淡入 - 提早到 0.1 秒
+    // 統計數據淡入 - 與地圖幾乎同時出現，讓彈出元素不會延遲
     tl.to(statsRef.current, {
       opacity: 1,
       y: 0,
-      duration: 0.6,
+      duration: 0.5,
       ease: "power2.out"
-    }, 0.1);
+    }, 0.05);
 
     // 清理函數
     return () => {

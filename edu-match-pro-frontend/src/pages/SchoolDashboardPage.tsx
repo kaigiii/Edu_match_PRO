@@ -246,8 +246,7 @@ const SchoolDashboardPage = () => {
                       variant="admin" 
                       onDelete={(id) => {
                         if (window.confirm('確定要刪除這個需求嗎？')) {
-                          // 這裡可以添加刪除邏輯
-                          console.log('刪除需求:', id);
+                          // TODO: 實作刪除邏輯
                         }
                       }}
                     />

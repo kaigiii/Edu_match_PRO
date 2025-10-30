@@ -10,13 +10,13 @@ const isDevelopment = import.meta.env.DEV;
 export const API_CONFIG = {
   // 開發環境：使用後端 API
   development: {
-    baseURL: 'http://localhost:8000',
+    baseURL: 'http://localhost:3001',
     timeout: 10000,
     useLocalFallback: false, // 最佳實踐：開發環境也直接走後端 API
   },
-  // 生產環境：使用靜態數據
+  // 生產環境：使用環境變數配置
   production: {
-    baseURL: '',
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api.edu-match-pro.com',
     timeout: 5000,
     useLocalFallback: false,
   }

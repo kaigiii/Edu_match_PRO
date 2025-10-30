@@ -554,6 +554,37 @@
 
 ---
 
+## 👨‍💻 開發者指南
+
+### 快速重建 Demo 資料
+
+如果 demo 資料出現問題或需要重置，執行以下命令：
+
+```bash
+# 方法 1: 在項目根目錄
+./rebuild_demo.sh
+
+# 方法 2: 在後端目錄
+cd edu-match-pro-backend
+source .venv/bin/activate
+python scripts/rebuild_demo_data.py
+```
+
+### Demo 測試帳號
+
+- **學校 1**: `demo.school@edu.tw` / `demo_school_2024`
+- **學校 2**: `demo.rural.school@edu.tw` / `demo_rural_2024`
+- **企業**: `demo.company@tech.com` / `demo_company_2024`
+
+### 技術文檔
+
+詳細的技術文檔和 API 說明請參考：
+- 後端文檔：`edu-match-pro-backend/README.md`
+- Demo 資料管理：`edu-match-pro-backend/scripts/README_DEMO_DATA.md`
+- API 文檔：`http://localhost:3001/docs` (開發環境)
+
+---
+
 ## 🙏 致謝
 
 感謝所有為智匯偏鄉平台做出貢獻的：

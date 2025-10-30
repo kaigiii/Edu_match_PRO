@@ -28,14 +28,34 @@ async def register(
             detail="Email already registered"
         )
     
-    # 創建新用戶
+    # 創建新用戶（包含 Profile）
     user = await create_user(session, user_in)
-    return UserPublic(
+    
+    # 構建回應（包含 profile 資料）
+    from app.schemas.profile_schemas import ProfilePublic
+    
+    response = UserPublic(
         id=user.id,
         email=user.email,
         role=user.role,
-        created_at=user.created_at
+        created_at=user.created_at,
+        profile=ProfilePublic(
+            id=user.profile.id,
+            user_id=user.profile.user_id,
+            organization_name=user.profile.organization_name,
+            contact_person=user.profile.contact_person,
+            position=user.profile.position,
+            phone=user.profile.phone,
+            address=user.profile.address,
+            tax_id=user.profile.tax_id,
+            bio=user.profile.bio,
+            avatar_url=user.profile.avatar_url,
+            created_at=user.profile.created_at,
+            updated_at=user.profile.updated_at
+        ) if user.profile else None
     )
+    
+    return response
 
 @router.post("/auth/login", response_model=Token)
 async def login(
@@ -56,11 +76,42 @@ async def login(
 
 
 @router.get("/auth/users/me", response_model=UserPublic)
-async def get_me(current_user: User = Depends(get_current_user)):
-    """取得當前使用者資訊"""
-    return UserPublic(
-        id=current_user.id,
-        email=current_user.email,
-        role=current_user.role,
-        created_at=current_user.created_at,
+async def get_me(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """取得當前使用者資訊（包含 profile）"""
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.schemas.profile_schemas import ProfilePublic
+    
+    # 查詢用戶並載入 profile 關聯
+    # 現在 demo 用戶也在 user 表中並且有 profile，所以統一處理
+    result = await session.execute(
+        select(User).where(User.id == current_user.id).options(selectinload(User.profile))
     )
+    user_with_profile = result.scalar_one()
+    
+    # 構建回應
+    response = UserPublic(
+        id=user_with_profile.id,
+        email=user_with_profile.email,
+        role=user_with_profile.role,
+        created_at=user_with_profile.created_at,
+        profile=ProfilePublic(
+            id=user_with_profile.profile.id,
+            user_id=user_with_profile.profile.user_id,
+            organization_name=user_with_profile.profile.organization_name,
+            contact_person=user_with_profile.profile.contact_person,
+            position=user_with_profile.profile.position,
+            phone=user_with_profile.profile.phone,
+            address=user_with_profile.profile.address,
+            tax_id=user_with_profile.profile.tax_id,
+            bio=user_with_profile.profile.bio,
+            avatar_url=user_with_profile.profile.avatar_url,
+            created_at=user_with_profile.profile.created_at,
+            updated_at=user_with_profile.profile.updated_at
+        ) if user_with_profile.profile else None
+    )
+    
+    return response

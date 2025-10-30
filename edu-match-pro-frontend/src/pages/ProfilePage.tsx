@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { 
@@ -12,21 +12,52 @@ import {
   CheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import apiService from '../services/apiService';
 
 const ProfilePage = () => {
   const { userRole } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
-    name: userRole === 'school' ? '王老師' : '陳經理',
-    email: userRole === 'school' ? 'wang.teacher@school.edu.tw' : 'chen.manager@company.com',
-    phone: userRole === 'school' ? '0912-345-678' : '02-2345-6789',
-    organization: userRole === 'school' ? '花蓮縣希望國小' : '台積電股份有限公司',
-    position: userRole === 'school' ? '資訊組長' : '企業社會責任部經理',
-    address: userRole === 'school' ? '花蓮縣花蓮市中山路123號' : '新竹市東區力行六路8號',
-    bio: userRole === 'school' 
-      ? '致力於推動偏鄉教育數位化，希望透過科技讓每個孩子都能享有優質的教育資源。'
-      : '專注於企業社會責任與永續發展，致力於創造企業與社會的雙贏局面。'
+    name: '',
+    email: '',
+    phone: '',
+    organization: '',
+    position: '',
+    address: '',
+    bio: ''
   });
+  const [originalData, setOriginalData] = useState(formData);
+
+  // 載入使用者資料
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiService.getCurrentUser();
+        
+        if (response && response.profile) {
+          const userData = {
+            name: response.profile.contact_person || '',
+            email: response.email || '',
+            phone: response.profile.phone || '',
+            organization: response.profile.organization_name || '',
+            position: response.profile.position || '',
+            address: response.profile.address || '',
+            bio: response.profile.bio || ''
+          };
+          setFormData(userData);
+          setOriginalData(userData);
+        }
+      } catch (error) {
+        console.error('載入使用者資料失敗:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadUserData();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -43,19 +74,20 @@ const ProfilePage = () => {
 
   const handleCancel = () => {
     setIsEditing(false);
-    // 重置表單數據
-    setFormData({
-      name: userRole === 'school' ? '王老師' : '陳經理',
-      email: userRole === 'school' ? 'wang.teacher@school.edu.tw' : 'chen.manager@company.com',
-      phone: userRole === 'school' ? '0912-345-678' : '02-2345-6789',
-      organization: userRole === 'school' ? '花蓮縣希望國小' : '台積電股份有限公司',
-      position: userRole === 'school' ? '資訊組長' : '企業社會責任部經理',
-      address: userRole === 'school' ? '花蓮縣花蓮市中山路123號' : '新竹市東區力行六路8號',
-      bio: userRole === 'school' 
-        ? '致力於推動偏鄉教育數位化，希望透過科技讓每個孩子都能享有優質的教育資源。'
-        : '專注於企業社會責任與永續發展，致力於創造企業與社會的雙贏局面。'
-    });
+    // 重置為原始資料
+    setFormData(originalData);
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">載入中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">

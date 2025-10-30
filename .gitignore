@@ -12,6 +12,29 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+
 # Logs
 logs/
 *.log
@@ -27,6 +50,9 @@ logs/
 *.tmp
 *.swp
 *.swo
+
+# Test files (root level only)
+/tests/
 
 # Security
 *.pem

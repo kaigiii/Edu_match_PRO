@@ -1,7 +1,7 @@
 """create_demo_user_tables_postgresql_final
 
 Revision ID: 41be4bad5307
-Revises: cb893db07ae0
+Revises: e84e6a362d75
 Create Date: 2025-10-21 16:56:50.549936
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = '41be4bad5307'
-down_revision: Union[str, None] = 'cb893db07ae0'
+down_revision: Union[str, None] = 'e84e6a362d75'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

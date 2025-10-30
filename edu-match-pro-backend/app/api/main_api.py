@@ -60,6 +60,55 @@ async def health_check():
     """健康檢查"""
     return {"status": "ok", "message": "Edu-Match-Pro API is running"}
 
+# ==================== 學校列表 ====================
+
+@router.get("/schools")
+async def get_schools(
+    query: str = "",
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    獲取學校列表（從 wide_faraway3 表）
+    返回格式："本校名稱"-"分校分班名稱"
+    支持搜索過濾
+    """
+    from sqlalchemy import select, text
+    
+    try:
+        # 使用原生 SQL 查詢以確保正確處理列名
+        sql = text("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN "分校分班名稱" IS NOT NULL AND "分校分班名稱" != '' 
+                    THEN "本校名稱" || '-' || "分校分班名稱"
+                    ELSE "本校名稱"
+                END as school_name
+            FROM wide_faraway3
+            WHERE 
+                ("本校名稱" IS NOT NULL AND "本校名稱" != '')
+                AND (
+                    :query = '' 
+                    OR "本校名稱" ILIKE '%' || :query || '%'
+                    OR "分校分班名稱" ILIKE '%' || :query || '%'
+                )
+            ORDER BY school_name
+            LIMIT 100
+        """)
+        
+        result = await session.execute(sql, {"query": query})
+        schools = [row[0] for row in result.fetchall()]
+        
+        return {
+            "schools": schools,
+            "total": len(schools)
+        }
+    except Exception as e:
+        print(f"Error fetching schools: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"獲取學校列表失敗: {str(e)}"
+        )
+
 # ==================== 學校需求相關 ====================
 
 @router.get("/school_needs", response_model=List[NeedPublic])

@@ -78,32 +78,71 @@ class ApiService {
         // 使用配置化的端點保護邏輯
         const schoolProtected = new Set(PROTECTED_ENDPOINTS.school);
         const companyProtected = new Set(PROTECTED_ENDPOINTS.company);
+        const commonProtected = new Set(PROTECTED_ENDPOINTS.common || []);
 
         let authHeaders: Record<string, string> = {};
         
         // 檢查是否有存儲的認證 token
         const storedToken = localStorage.getItem(AUTH_CONFIG.TOKEN_STORAGE_KEY);
-        if (storedToken && (schoolProtected.has(endpoint) || companyProtected.has(endpoint))) {
+        
+        // 檢查端點是否受保護（支援前綴匹配）
+        const isProtectedEndpoint = 
+          Array.from(schoolProtected).some(path => endpoint.startsWith(path)) || 
+          Array.from(companyProtected).some(path => endpoint.startsWith(path)) || 
+          Array.from(commonProtected).some(path => endpoint.startsWith(path));
+        
+        if (storedToken && isProtectedEndpoint) {
           authHeaders = { Authorization: `Bearer ${storedToken}` };
-        } else if (schoolProtected.has(endpoint)) {
+        } else if (Array.from(schoolProtected).some(path => endpoint.startsWith(path)) && !storedToken) {
           const token = await this.ensureToken('school');
           authHeaders = { Authorization: `Bearer ${token}` };
-        } else if (companyProtected.has(endpoint)) {
+        } else if (Array.from(companyProtected).some(path => endpoint.startsWith(path)) && !storedToken) {
           const token = await this.ensureToken('company');
           authHeaders = { Authorization: `Bearer ${token}` };
         }
 
-        const response = await fetch(createApiUrl(endpoint), {
+        const requestUrl = createApiUrl(endpoint);
+        const requestOptions = {
           ...options,
           headers: {
             'Content-Type': 'application/json',
             ...authHeaders,
             ...options.headers,
           },
-        });
+        };
+
+        const response = await fetch(requestUrl, requestOptions);
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // 嘗試解析錯誤響應
+          let errorMessage = `HTTP error! status: ${response.status}`;
+          let errorData = null;
+          
+          try {
+            errorData = await response.json();
+            
+            // 處理不同的錯誤格式
+            if (Array.isArray(errorData.detail)) {
+              // FastAPI 驗證錯誤格式
+              errorMessage = errorData.detail.map((err: any) => 
+                `${err.loc ? err.loc.join('.') : 'field'}: ${err.msg}`
+              ).join(', ');
+            } else if (errorData.detail) {
+              errorMessage = errorData.detail;
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            }
+          } catch (parseError) {
+            // 如果無法解析 JSON，使用默認錯誤信息
+            console.warn('Could not parse error response:', parseError);
+          }
+          
+          const error = new Error(errorMessage);
+          (error as any).response = { 
+            status: response.status, 
+            data: errorData || { detail: errorMessage } 
+          };
+          throw error;
         }
 
         return await response.json();
@@ -142,18 +181,13 @@ class ApiService {
 
   // 獲取備用數據
   private getFallbackData<T>(endpoint: string): T {
-    console.log('ApiService: getFallbackData called for endpoint:', endpoint);
-    console.log('ApiService: fallbackData keys:', Object.keys(this.fallbackData));
-    
-    // 處理單個資源請求（如 /school_needs/need-001）
+    // 處理單個學校需求查詢
     if (endpoint.startsWith('/school_needs/')) {
       const needId = endpoint.split('/').pop();
-      console.log('ApiService: looking for single need with id:', needId);
       
       if (this.fallbackData.schoolNeeds && Array.isArray(this.fallbackData.schoolNeeds)) {
         const need = this.fallbackData.schoolNeeds.find((n: any) => n.id === needId);
         if (need) {
-          console.log('ApiService: found single need:', need);
           return need as T;
         }
       }
@@ -173,10 +207,8 @@ class ApiService {
     };
 
     const dataKey = fallbackMap[endpoint];
-    console.log('ApiService: dataKey for endpoint:', dataKey);
     
     if (dataKey && this.fallbackData[dataKey]) {
-      console.log('ApiService: returning fallback data for', dataKey, 'length:', this.fallbackData[dataKey]?.length);
       return this.fallbackData[dataKey];
     }
 
@@ -195,10 +227,7 @@ class ApiService {
   }
 
   async getSchoolNeedById(id: string): Promise<SchoolNeed> {
-    console.log('ApiService: getSchoolNeedById called with id:', id);
-    const result = await this.request<SchoolNeed>(`/school_needs/${id}`);
-    console.log('ApiService: getSchoolNeedById result:', result);
-    return result;
+    return this.request<SchoolNeed>(`/school_needs/${id}`);
   }
 
   async createSchoolNeed(need: Omit<SchoolNeed, 'id'>): Promise<SchoolNeed> {
@@ -299,6 +328,19 @@ class ApiService {
 
   async getProfile(): Promise<any> {
     return this.request<any>('/auth/profile');
+  }
+
+  async getCurrentUser(): Promise<any> {
+    return this.request<any>('/auth/users/me');
+  }
+
+  // ==================== 學校列表 ====================
+  
+  async getSchools(query: string = ''): Promise<{ schools: string[]; total: number }> {
+    const url = query ? `/schools?query=${encodeURIComponent(query)}` : '/schools';
+    return this.request<{ schools: string[]; total: number }>(url, {
+      method: 'GET',
+    });
   }
 }
 
