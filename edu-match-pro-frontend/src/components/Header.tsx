@@ -163,6 +163,9 @@ const Header = () => {
               <Link to="/needs" className="text-neutral-500 hover:text-brand-blue transition-colors">需求列表</Link>
             </motion.div>
             <motion.div whileHover={{ y: -2, color: '#3b82f6' }} whileTap={{ scale: 0.95 }}>
+              <Link to="/data-explorer" className="text-neutral-500 hover:text-brand-blue transition-colors">資料探索</Link>
+            </motion.div>
+            <motion.div whileHover={{ y: -2, color: '#3b82f6' }} whileTap={{ scale: 0.95 }}>
               <Link to="/stories" className="text-neutral-500 hover:text-brand-blue transition-colors">影響力故事</Link>
             </motion.div>
             <motion.div whileHover={{ y: -2, color: '#3b82f6' }} whileTap={{ scale: 0.95 }}>
@@ -219,6 +222,7 @@ const Header = () => {
             <Link to="/for-schools" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>我是學校</Link>
             <Link to="/for-companies" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>我是企業</Link>
             <Link to="/needs" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>需求列表</Link>
+            <Link to="/data-explorer" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>資料探索</Link>
             <Link to="/stories" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>影響力故事</Link>
             <Link to="/about" className="block text-neutral-600 hover:text-brand-blue" onClick={() => setMobileOpen(false)}>關於我們</Link>
             <div className="pt-2 border-t border-gray-100"/>

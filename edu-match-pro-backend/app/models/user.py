@@ -2,6 +2,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, Enum as SAEnum
 from typing import Optional, List, TYPE_CHECKING
 from enum import Enum
+from datetime import datetime
 from app.models.base import BaseModel
 
 if TYPE_CHECKING:
@@ -26,6 +27,14 @@ class User(BaseModel, table=True):
             nullable=False
         )
     )
+    
+    # Demo 用戶相關字段
+    is_demo: bool = Field(default=False)  # 標記是否為演示帳號
+    display_name: Optional[str] = Field(default=None, max_length=255)  # 顯示名稱（主要用於 demo）
+    description: Optional[str] = Field(default=None)  # 用戶描述
+    is_active: bool = Field(default=True)  # 是否啟用
+    last_used_at: Optional[datetime] = Field(default=None)  # 最後使用時間
+    usage_count: int = Field(default=0)  # 使用次數統計
     
     # 一對一關聯到 Profile
     profile: Optional["Profile"] = Relationship(back_populates="user")

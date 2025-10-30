@@ -5,7 +5,6 @@ from app.models.need import Need, UrgencyLevel, NeedStatus
 from app.models.donation import Donation, DonationStatus
 from app.models.impact_story import ImpactStory
 from app.models.activity_log import ActivityLog, ActivityType
-from app.models.demo_user import DemoUser, DemoProfile
 
 __all__ = [
     "BaseModel",
@@ -20,6 +19,4 @@ __all__ = [
     "ImpactStory",
     "ActivityLog",
     "ActivityType",
-    "DemoUser",
-    "DemoProfile",
 ]

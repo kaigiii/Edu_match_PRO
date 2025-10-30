@@ -1,5 +1,6 @@
 """
 簡化的 API 依賴
+支持統一的用戶認證（正式用戶和演示用戶已合併）
 """
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -7,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from app.db import get_session
 from app.models.user import User
-from app.models.demo_user import DemoUser
 from sqlalchemy import select
 from app.core.security import verify_token
 from app.core.exceptions import UnauthorizedError
@@ -18,7 +18,11 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     session: AsyncSession = Depends(get_session)
 ) -> User:
-    """獲取當前用戶（支援真實用戶和模擬用戶）"""
+    """
+    獲取當前用戶（統一處理正式用戶和演示用戶）
+    
+    所有用戶現在都在 User 表中，通過 is_demo 字段區分
+    """
     token = credentials.credentials
     
     # 驗證 token 並獲取用戶信息
@@ -36,33 +40,18 @@ async def get_current_user(
         import uuid
         user_uuid = uuid.UUID(str(user_id))
         
-        # 檢查是否為模擬用戶
-        is_demo = user_data.get("is_demo", False)
+        # 查詢用戶表（包含正式用戶和演示用戶）
+        result = await session.execute(select(User).where(User.id == user_uuid))
+        user = result.scalar_one_or_none()
         
-        if is_demo:
-            # 查詢模擬用戶表
-            result = await session.execute(select(DemoUser).where(DemoUser.id == user_uuid))
-            demo_user = result.scalar_one_or_none()
-            if not demo_user or not demo_user.email:
-                raise UnauthorizedError("Demo user not found")
-            
-            # 將模擬用戶轉換為 User 對象（用於兼容性）
-            user = User(
-                id=demo_user.id,
-                email=demo_user.email,
-                password=demo_user.password,
-                role=demo_user.role,
-                created_at=demo_user.created_at,
-                updated_at=demo_user.updated_at
-            )
-            return user
-        else:
-            # 查詢真實用戶表
-            result = await session.execute(select(User).where(User.id == user_uuid))
-            user = result.scalar_one_or_none()
-            if not user or not user.email:
-                raise UnauthorizedError("User not found")
-            return user
+        if not user or not user.email:
+            raise UnauthorizedError("User not found")
+        
+        # 檢查用戶是否啟用
+        if not user.is_active:
+            raise UnauthorizedError("User account is deactivated")
+        
+        return user
             
     except (ValueError, TypeError) as e:
         raise UnauthorizedError(f"Invalid user ID format: {str(e)}")

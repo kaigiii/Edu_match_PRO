@@ -1,7 +1,7 @@
 """create wide_connected_devices table
 
 Revision ID: ffc0c7b1c2a3
-Revises: e84e6a362d75
+Revises: 41be4bad5307
 Create Date: 2025-10-28 00:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'ffc0c7b1c2a3'
-down_revision: Union[str, None] = 'e84e6a362d75'
+down_revision: Union[str, None] = '41be4bad5307'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

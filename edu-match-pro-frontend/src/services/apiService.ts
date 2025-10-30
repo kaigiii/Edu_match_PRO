@@ -342,6 +342,74 @@ class ApiService {
       method: 'GET',
     });
   }
+
+  // ==================== Wide 資料表 API ====================
+
+  async getFarawaySchools(params: {
+    page?: number;
+    limit?: number;
+    county?: string;
+    school_name?: string;
+  } = {}): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.county) queryParams.append('county', params.county);
+    if (params.school_name) queryParams.append('school_name', params.school_name);
+    
+    const url = `/data/faraway-schools?${queryParams.toString()}`;
+    return this.request<any>(url, { method: 'GET' });
+  }
+
+  async getEducationStatistics(params: {
+    page?: number;
+    limit?: number;
+    county?: string;
+  } = {}): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.county) queryParams.append('county', params.county);
+    
+    const url = `/data/education-statistics?${queryParams.toString()}`;
+    return this.request<any>(url, { method: 'GET' });
+  }
+
+  async getConnectedDevices(params: {
+    page?: number;
+    limit?: number;
+    county?: string;
+    school_name?: string;
+  } = {}): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.county) queryParams.append('county', params.county);
+    if (params.school_name) queryParams.append('school_name', params.school_name);
+    
+    const url = `/data/connected-devices?${queryParams.toString()}`;
+    return this.request<any>(url, { method: 'GET' });
+  }
+
+  async getVolunteerTeams(params: {
+    page?: number;
+    limit?: number;
+    county?: string;
+    school?: string;
+  } = {}): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.county) queryParams.append('county', params.county);
+    if (params.school) queryParams.append('school', params.school);
+    
+    const url = `/data/volunteer-teams?${queryParams.toString()}`;
+    return this.request<any>(url, { method: 'GET' });
+  }
+
+  async getDataStatistics(): Promise<any> {
+    return this.request<any>('/data/statistics', { method: 'GET' });
+  }
 }
 
 // 導出單例實例

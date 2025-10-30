@@ -23,6 +23,7 @@ import ForSchoolsPage from './pages/ForSchoolsPage';
 import ForCompaniesPage from './pages/ForCompaniesPage';
 import AboutPage from './pages/AboutPage';
 import RegisterPage from './pages/RegisterPage';
+import DataExplorerPage from './pages/DataExplorerPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
           <Route path="stories" element={<ImpactStoriesPage />} />
           <Route path="needs" element={<AllNeedsPage />} />
           <Route path="needs/:needId" element={<NeedDetailPage />} />
+          <Route path="data-explorer" element={<DataExplorerPage />} />
           <Route path="for-schools" element={<ForSchoolsPage />} />
           <Route path="for-companies" element={<ForCompaniesPage />} />
           <Route path="about" element={<AboutPage />} />

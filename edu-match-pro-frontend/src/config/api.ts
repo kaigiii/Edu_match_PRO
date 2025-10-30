@@ -6,24 +6,47 @@
 // 檢查是否為開發環境
 const isDevelopment = import.meta.env.DEV;
 
+// 獲取 API 基礎 URL（優先使用環境變數）
+const getBaseURL = (): string => {
+  // 1. 優先使用環境變數
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // 2. 開發環境默認使用 localhost
+  if (isDevelopment) {
+    return 'http://localhost:3001';
+  }
+  
+  // 3. 生產環境默認（但應該通過環境變數設置）
+  return 'https://api.edu-match-pro.com';
+};
+
 // API 基礎 URL 配置
 export const API_CONFIG = {
   // 開發環境：使用後端 API
   development: {
-    baseURL: 'http://localhost:3001',
+    baseURL: getBaseURL(),
     timeout: 10000,
     useLocalFallback: false, // 最佳實踐：開發環境也直接走後端 API
   },
   // 生產環境：使用環境變數配置
   production: {
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api.edu-match-pro.com',
-    timeout: 5000,
+    baseURL: getBaseURL(),
+    timeout: 10000,
     useLocalFallback: false,
   }
 };
 
 // 當前配置
 export const currentConfig = isDevelopment ? API_CONFIG.development : API_CONFIG.production;
+
+// 打印當前 API 配置（便於調試）
+console.log('🔧 API Configuration:', {
+  mode: isDevelopment ? 'development' : 'production',
+  baseURL: currentConfig.baseURL,
+  env: import.meta.env.VITE_API_BASE_URL || 'not set'
+});
 
 // API 端點配置
 export const API_ENDPOINTS = {

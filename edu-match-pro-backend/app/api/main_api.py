@@ -23,8 +23,6 @@ from app.crud.dashboard_crud import get_school_dashboard_stats as get_school_sta
 from app.crud.donation_crud import get_donations_by_company
 from app.crud.activity_log_crud import get_recent_activity as get_user_activity
 
-# 導入模擬認證API
-from app.api.demo_auth_api import router as demo_auth_router
 # 導入模擬數據
 from app.data.mock_data import RECENT_PROJECTS, IMPACT_STORIES
 
@@ -49,9 +47,6 @@ def convert_need_to_public(need) -> NeedPublic:
 
 # 創建主路由器
 router = APIRouter(tags=["Main API"])
-
-# 包含模擬認證路由
-router.include_router(demo_auth_router)
 
 # ==================== 健康檢查 ====================
 
@@ -107,6 +102,387 @@ async def get_schools(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"獲取學校列表失敗: {str(e)}"
+        )
+
+
+# ==================== Wide 資料表 API ====================
+
+@router.get("/data/faraway-schools")
+async def get_faraway_schools(
+    page: int = 1,
+    limit: int = 50,
+    county: str = "",
+    school_name: str = "",
+    session: AsyncSession = Depends(get_session)
+):
+    """獲取偏鄉學校資料 (wide_faraway3)"""
+    from sqlalchemy import text
+    
+    try:
+        offset = (page - 1) * limit
+        
+        # 構建查詢條件
+        where_clauses = []
+        params = {"limit": limit, "offset": offset}
+        
+        if county:
+            where_clauses.append('"縣市名稱" ILIKE :county')
+            params["county"] = f"%{county}%"
+        
+        if school_name:
+            where_clauses.append('"本校名稱" ILIKE :school_name')
+            params["school_name"] = f"%{school_name}%"
+        
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+        
+        # 查詢資料
+        data_sql = text(f"""
+            SELECT 
+                "學年度", "縣市名稱", "鄉鎮市區", "學生等級",
+                "本校代碼", "本校名稱", "分校分班名稱",
+                "公/私立", "地區屬性", "班級數",
+                "男學生數[人]", "女學生數[人]", "原住民學生比率",
+                "上學年男畢業生數[人]", "上學年女畢業生數[人]"
+            FROM wide_faraway3
+            WHERE {where_sql}
+            ORDER BY "縣市名稱", "本校名稱"
+            LIMIT :limit OFFSET :offset
+        """)
+        
+        # 查詢總數
+        count_sql = text(f"""
+            SELECT COUNT(*) FROM wide_faraway3
+            WHERE {where_sql}
+        """)
+        
+        result = await session.execute(data_sql, params)
+        rows = result.fetchall()
+        
+        count_result = await session.execute(count_sql, {k: v for k, v in params.items() if k not in ['limit', 'offset']})
+        total = count_result.scalar()
+        
+        data = []
+        for row in rows:
+            data.append({
+                "學年度": row[0],
+                "縣市名稱": row[1],
+                "鄉鎮市區": row[2],
+                "學生等級": row[3],
+                "本校代碼": row[4],
+                "本校名稱": row[5],
+                "分校分班名稱": row[6],
+                "公私立": row[7],
+                "地區屬性": row[8],
+                "班級數": row[9],
+                "男學生數": row[10],
+                "女學生數": row[11],
+                "原住民學生比率": float(row[12]) if row[12] else None,
+                "上學年男畢業生數": row[13],
+                "上學年女畢業生數": row[14],
+            })
+        
+        return {
+            "data": data,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"獲取偏鄉學校資料失敗: {str(e)}"
+        )
+
+
+@router.get("/data/education-statistics")
+async def get_education_statistics(
+    page: int = 1,
+    limit: int = 50,
+    county: str = "",
+    session: AsyncSession = Depends(get_session)
+):
+    """獲取教育統計資料 (wide_edu_B_1_4)"""
+    from sqlalchemy import text
+    
+    try:
+        offset = (page - 1) * limit
+        
+        where_sql = '"縣市別" ILIKE :county' if county else "1=1"
+        params = {"limit": limit, "offset": offset, "county": f"%{county}%"}
+        
+        data_sql = text(f"""
+            SELECT 
+                "學年度", "縣市別",
+                "幼兒園[人]", "國小[人]", "國中[人]",
+                "高級中等學校-普通科[人]", "高級中等學校-專業群科[人]",
+                "高級中等學校-綜合高中[人]", "高級中等學校-實用技能學程[人]",
+                "高級中等學校-進修部[人]", "大專校院(全部計入校本部)[人]",
+                "大專校院(跨縣市教學計入所在地縣市)[人]", "宗教研修學院[人]",
+                "國民補習及大專進修學校及空大[人]", "特殊教育學校[人]"
+            FROM "wide_edu_B_1_4"
+            WHERE {where_sql}
+            ORDER BY "學年度" DESC, "縣市別"
+            LIMIT :limit OFFSET :offset
+        """)
+        
+        count_sql = text(f"""
+            SELECT COUNT(*) FROM "wide_edu_B_1_4"
+            WHERE {where_sql}
+        """)
+        
+        result = await session.execute(data_sql, params)
+        rows = result.fetchall()
+        
+        count_result = await session.execute(count_sql, {"county": f"%{county}%"})
+        total = count_result.scalar()
+        
+        data = []
+        for row in rows:
+            data.append({
+                "學年度": row[0],
+                "縣市別": row[1],
+                "幼兒園": row[2],
+                "國小": row[3],
+                "國中": row[4],
+                "高中普通科": row[5],
+                "高中專業群科": row[6],
+                "高中綜合高中": row[7],
+                "高中實用技能學程": row[8],
+                "高中進修部": row[9],
+                "大專校院校本部": row[10],
+                "大專校院跨縣市": row[11],
+                "宗教研修學院": row[12],
+                "國民補習及大專進修": row[13],
+                "特殊教育學校": row[14],
+            })
+        
+        return {
+            "data": data,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"獲取教育統計資料失敗: {str(e)}"
+        )
+
+
+@router.get("/data/connected-devices")
+async def get_connected_devices(
+    page: int = 1,
+    limit: int = 50,
+    county: str = "",
+    school_name: str = "",
+    session: AsyncSession = Depends(get_session)
+):
+    """獲取學校電腦設備資料 (wide_connected_devices)"""
+    from sqlalchemy import text
+    
+    try:
+        offset = (page - 1) * limit
+        
+        where_clauses = []
+        params = {"limit": limit, "offset": offset}
+        
+        if county:
+            where_clauses.append('"縣市" ILIKE :county')
+            params["county"] = f"%{county}%"
+        
+        if school_name:
+            where_clauses.append('"學校名稱" ILIKE :school_name')
+            params["school_name"] = f"%{school_name}%"
+        
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+        
+        data_sql = text(f"""
+            SELECT 
+                "縣市", "縣市代碼", "鄉鎮市區",
+                "學校名稱", "教學電腦數"
+            FROM wide_connected_devices
+            WHERE {where_sql}
+            ORDER BY "縣市", "學校名稱"
+            LIMIT :limit OFFSET :offset
+        """)
+        
+        count_sql = text(f"""
+            SELECT COUNT(*) FROM wide_connected_devices
+            WHERE {where_sql}
+        """)
+        
+        result = await session.execute(data_sql, params)
+        rows = result.fetchall()
+        
+        count_result = await session.execute(count_sql, {k: v for k, v in params.items() if k not in ['limit', 'offset']})
+        total = count_result.scalar()
+        
+        data = []
+        for row in rows:
+            data.append({
+                "縣市": row[0],
+                "縣市代碼": row[1],
+                "鄉鎮市區": row[2],
+                "學校名稱": row[3],
+                "教學電腦數": row[4],
+            })
+        
+        return {
+            "data": data,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"獲取電腦設備資料失敗: {str(e)}"
+        )
+
+
+@router.get("/data/volunteer-teams")
+async def get_volunteer_teams(
+    page: int = 1,
+    limit: int = 50,
+    county: str = "",
+    school: str = "",
+    session: AsyncSession = Depends(get_session)
+):
+    """獲取資訊志工團隊資料 (wide_volunteer_teams)"""
+    from sqlalchemy import text
+    
+    try:
+        offset = (page - 1) * limit
+        
+        where_clauses = []
+        params = {"limit": limit, "offset": offset}
+        
+        if county:
+            where_clauses.append('"縣市" ILIKE :county')
+            params["county"] = f"%{county}%"
+        
+        if school:
+            where_clauses.append('("受服務單位" ILIKE :school OR "志工團隊學校" ILIKE :school)')
+            params["school"] = f"%{school}%"
+        
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+        
+        data_sql = text(f"""
+            SELECT 
+                "年度", "縣市", "受服務單位", "志工團隊學校"
+            FROM wide_volunteer_teams
+            WHERE {where_sql}
+            ORDER BY "年度" DESC, "縣市", "受服務單位"
+            LIMIT :limit OFFSET :offset
+        """)
+        
+        count_sql = text(f"""
+            SELECT COUNT(*) FROM wide_volunteer_teams
+            WHERE {where_sql}
+        """)
+        
+        result = await session.execute(data_sql, params)
+        rows = result.fetchall()
+        
+        count_result = await session.execute(count_sql, {k: v for k, v in params.items() if k not in ['limit', 'offset']})
+        total = count_result.scalar()
+        
+        data = []
+        for row in rows:
+            data.append({
+                "年度": row[0],
+                "縣市": row[1],
+                "受服務單位": row[2],
+                "志工團隊學校": row[3],
+            })
+        
+        return {
+            "data": data,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"獲取志工團隊資料失敗: {str(e)}"
+        )
+
+
+# ==================== Wide 資料統計 API ====================
+
+@router.get("/data/statistics")
+async def get_data_statistics(
+    session: AsyncSession = Depends(get_session)
+):
+    """獲取所有 wide 表的統計資訊"""
+    from sqlalchemy import text
+    
+    try:
+        stats = {}
+        
+        # 偏鄉學校統計
+        result = await session.execute(text("""
+            SELECT 
+                COUNT(*) as total,
+                COUNT(DISTINCT "縣市名稱") as counties,
+                SUM("班級數") as total_classes,
+                SUM("男學生數[人]" + "女學生數[人]") as total_students
+            FROM wide_faraway3
+        """))
+        row = result.fetchone()
+        stats["faraway_schools"] = {
+            "total_records": row[0],
+            "counties": row[1],
+            "total_classes": row[2],
+            "total_students": row[3]
+        }
+        
+        # 教育統計
+        result = await session.execute(text("""
+            SELECT COUNT(*) FROM "wide_edu_B_1_4"
+        """))
+        stats["education_statistics"] = {
+            "total_records": result.scalar()
+        }
+        
+        # 電腦設備統計
+        result = await session.execute(text("""
+            SELECT 
+                COUNT(*) as total,
+                COUNT(DISTINCT "縣市") as counties
+            FROM wide_connected_devices
+        """))
+        row = result.fetchone()
+        stats["connected_devices"] = {
+            "total_records": row[0],
+            "counties": row[1]
+        }
+        
+        # 志工團隊統計
+        result = await session.execute(text("""
+            SELECT 
+                COUNT(*) as total,
+                COUNT(DISTINCT "縣市") as counties,
+                COUNT(DISTINCT "志工團隊學校") as volunteer_schools
+            FROM wide_volunteer_teams
+        """))
+        row = result.fetchone()
+        stats["volunteer_teams"] = {
+            "total_records": row[0],
+            "counties": row[1],
+            "volunteer_schools": row[2]
+        }
+        
+        return stats
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"獲取統計資料失敗: {str(e)}"
         )
 
 # ==================== 學校需求相關 ====================

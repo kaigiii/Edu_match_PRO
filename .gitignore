@@ -58,3 +58,7 @@ logs/
 *.pem
 *.key
 *.crt
+
+# Ngrok 配置（包含 token）
+start.sh
+start_ngrok.sh

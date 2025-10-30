@@ -47,17 +47,21 @@ async def get_needs_by_school(session: AsyncSession, school_id: uuid.UUID, skip:
 
 
 async def get_all_needs(session: AsyncSession, skip: int = 0, limit: int = 100) -> List[Need]:
-    """獲取所有需求（排除模擬用戶創建的需求）"""
-    from app.models.demo_user import DemoUser
-    from sqlalchemy import select, and_, not_
+    """
+    獲取所有需求（排除演示用戶創建的需求）
     
-    # 獲取所有模擬用戶的 ID
+    現在使用統一的 User 表，通過 is_demo 字段區分演示用戶
+    """
+    from app.models.user import User
+    from sqlalchemy import select, not_
+    
+    # 獲取所有演示用戶的 ID
     demo_users_result = await session.execute(
-        select(DemoUser.id).where(DemoUser.is_active == True)
+        select(User.id).where(User.is_demo == True, User.is_active == True)
     )
     demo_user_ids = [user_id[0] for user_id in demo_users_result.fetchall()]
     
-    # 查詢所有需求，但排除模擬用戶創建的需求
+    # 查詢所有需求，但排除演示用戶創建的需求
     if demo_user_ids:
         result = await session.execute(
             select(Need)
@@ -67,7 +71,7 @@ async def get_all_needs(session: AsyncSession, skip: int = 0, limit: int = 100) 
             .order_by(Need.created_at.desc())
         )
     else:
-        # 如果沒有模擬用戶，返回所有需求
+        # 如果沒有演示用戶，返回所有需求
         result = await session.execute(
             select(Need)
             .offset(skip)
