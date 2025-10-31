@@ -10,8 +10,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
-    # AI 服務配置
+    # AI 服務配置 - 支援多個API密鑰輪換
     gemini_api_key: Optional[str] = None
+    gemini_api_key_2: Optional[str] = None
+    gemini_api_key_3: Optional[str] = None
+    gemini_api_key_4: Optional[str] = None
     
     # Demo user passwords (for local/demo only)
     demo_school_password: str = "demo_school_2024"
@@ -29,6 +32,19 @@ class Settings(BaseSettings):
             # 分割逗號分隔的字串
             return [origin.strip() for origin in v.split(',') if origin.strip()]
         return v
+    
+    def get_gemini_api_keys(self) -> list[str]:
+        """獲取所有可用的 Gemini API 密鑰列表"""
+        keys = []
+        if self.gemini_api_key:
+            keys.append(self.gemini_api_key)
+        if self.gemini_api_key_2:
+            keys.append(self.gemini_api_key_2)
+        if self.gemini_api_key_3:
+            keys.append(self.gemini_api_key_3)
+        if self.gemini_api_key_4:
+            keys.append(self.gemini_api_key_4)
+        return keys
     
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -2,13 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   SparklesIcon, 
-  MapIcon, 
   ChartBarIcon, 
   DocumentTextIcon,
   CheckCircleIcon,
   LightBulbIcon,
-  UsersIcon,
-  AcademicCapIcon,
   PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 import { apiService } from '../services/apiService';
@@ -365,49 +362,6 @@ const SmartExplorationPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-8"
         >
-          {/* 統計摘要 */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <ChartBarIcon className="w-6 h-6 mr-2 text-blue-600" />
-              數據摘要
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-blue-50 rounded-lg p-6">
-                <div className="flex items-center space-x-3">
-                  <MapIcon className="w-8 h-8 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">找到學校</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {analysisResult.statistics.total_schools} 所
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-6">
-                <div className="flex items-center space-x-3">
-                  <UsersIcon className="w-8 h-8 text-green-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">總學生數</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {analysisResult.statistics.total_students.toLocaleString()} 人
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-6">
-                <div className="flex items-center space-x-3">
-                  <AcademicCapIcon className="w-8 h-8 text-purple-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">涵蓋區域</p>
-                    <p className="text-lg font-bold text-purple-600">
-                      {analysisResult.statistics.counties_covered.join('、')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* AI 分析報告 */}
           <div className="relative">
             {/* 背景裝飾 - 動態氣泡 */}

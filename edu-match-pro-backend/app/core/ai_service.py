@@ -10,7 +10,7 @@ from app.core.config import settings
 
 
 class AIService:
-    """AI 策略分析服務"""
+    """AI 策略分析服務（支援多API密鑰輪換）"""
     
     # AI 人設
     PERSONA = """你是「小匯」，智匯偏鄉平台的AI教育公益顧問。
@@ -47,33 +47,115 @@ class AIService:
 重要：對話時使用純文字，不要用 Markdown 格式（不要用 ** 粗體、不要用 * 列表、不要用 # 標題）。"""
     
     def __init__(self):
-        """初始化 AI 服務"""
-        # 從 settings 獲取 API 金鑰
-        api_key = settings.gemini_api_key
-        if not api_key:
-            raise ValueError("未設置 GEMINI_API_KEY 環境變量或配置")
+        """初始化 AI 服務（支援多API密鑰輪換）"""
+        # 從 settings 獲取所有 API 金鑰
+        self.api_keys = settings.get_gemini_api_keys()
+        if not self.api_keys:
+            raise ValueError("未設置任何 GEMINI_API_KEY 環境變量或配置")
         
+        self.current_key_index = 0
+        self.model = None
+        
+        # 嘗試使用第一個可用的 API 金鑰初始化
+        self._initialize_with_current_key()
+        
+        print(f"[AI服務] 已初始化，使用模型: {self.model_name}，可用API密鑰數: {len(self.api_keys)}")
+    
+    def _initialize_with_current_key(self):
+        """使用當前索引的API密鑰初始化模型"""
+        if self.current_key_index >= len(self.api_keys):
+            raise ValueError("所有 API 密鑰都已達到限制")
+        
+        api_key = self.api_keys[self.current_key_index]
         genai.configure(api_key=api_key)
         
         # 選擇模型
-        available_models = [
-            m.name for m in genai.list_models() 
-            if 'generateContent' in m.supported_generation_methods
-        ]
+        try:
+            available_models = [
+                m.name for m in genai.list_models() 
+                if 'generateContent' in m.supported_generation_methods
+            ]
+            
+            preferred_models = ['models/gemini-2.0-flash-exp', 'models/gemini-1.5-flash', 'models/gemini-1.5-pro']
+            model_name = None
+            
+            for preferred in preferred_models:
+                if preferred in available_models:
+                    model_name = preferred
+                    break
+            
+            if not model_name:
+                model_name = available_models[0] if available_models else 'models/gemini-pro'
+            
+            self.model = genai.GenerativeModel(model_name)
+            self.model_name = model_name
+            print(f"[AI服務] 使用API密鑰 #{self.current_key_index + 1}")
+        except Exception as e:
+            print(f"[AI服務] API密鑰 #{self.current_key_index + 1} 初始化失敗: {e}")
+            # 嘗試下一個密鑰
+            self.current_key_index += 1
+            if self.current_key_index < len(self.api_keys):
+                print(f"[AI服務] 切換到API密鑰 #{self.current_key_index + 1}")
+                self._initialize_with_current_key()
+            else:
+                raise ValueError("所有 API 密鑰初始化都失敗")
+    
+    def _switch_to_next_key(self):
+        """切換到下一個API密鑰"""
+        self.current_key_index += 1
+        if self.current_key_index >= len(self.api_keys):
+            print(f"[AI服務] 所有 {len(self.api_keys)} 個API密鑰都已嘗試")
+            return False
         
-        preferred_models = ['models/gemini-2.0-flash-exp', 'models/gemini-1.5-flash', 'models/gemini-1.5-pro']
-        model_name = None
+        print(f"[AI服務] 切換到API密鑰 #{self.current_key_index + 1}/{len(self.api_keys)}")
+        try:
+            self._initialize_with_current_key()
+            return True
+        except Exception as e:
+            print(f"[AI服務] 切換失敗: {e}")
+            return False
+    
+    def _call_with_retry(self, prompt: str, max_retries: int = None) -> str:
+        """
+        使用重試機制調用API（自動切換密鑰）
         
-        for preferred in preferred_models:
-            if preferred in available_models:
-                model_name = preferred
-                break
+        Args:
+            prompt: 提示詞
+            max_retries: 最大重試次數（None表示嘗試所有密鑰）
         
-        if not model_name:
-            model_name = available_models[0] if available_models else 'models/gemini-pro'
+        Returns:
+            API回應文本
+        """
+        if max_retries is None:
+            max_retries = len(self.api_keys)
         
-        self.model = genai.GenerativeModel(model_name)
-        print(f"[AI服務] 已初始化，使用模型: {model_name}")
+        attempts = 0
+        last_error = None
+        
+        while attempts < max_retries:
+            try:
+                response = self.model.generate_content(prompt)
+                return response.text
+            except Exception as e:
+                last_error = e
+                error_msg = str(e).lower()
+                
+                # 檢查是否為速率限制錯誤
+                if '429' in error_msg or 'quota' in error_msg or 'rate limit' in error_msg or 'resource exhausted' in error_msg:
+                    print(f"[AI服務] API密鑰 #{self.current_key_index + 1} 達到限制: {e}")
+                    
+                    # 嘗試切換到下一個密鑰
+                    if self._switch_to_next_key():
+                        attempts += 1
+                        continue
+                    else:
+                        raise ValueError(f"所有 {len(self.api_keys)} 個API密鑰都已達到限制或失敗")
+                else:
+                    # 其他類型的錯誤，直接拋出
+                    raise e
+        
+        # 如果所有重試都失敗
+        raise ValueError(f"API調用失敗，已嘗試 {attempts} 次: {last_error}")
     
     def extract_donation_parameters(self, user_query: str, conversation_history: List[Dict] = None) -> Dict[str, Any]:
         """
@@ -120,8 +202,8 @@ class AIService:
 """
         
         try:
-            response = self.model.generate_content(prompt)
-            cleaned = response.text.strip().replace("```json", "").replace("```", "").strip()
+            response_text = self._call_with_retry(prompt)
+            cleaned = response_text.strip().replace("```json", "").replace("```", "").strip()
             return json.loads(cleaned)
         except Exception as e:
             print(f"[AI服務] 參數提取失敗: {e}")
@@ -170,9 +252,9 @@ class AIService:
 """
         try:
             print(f"[AI] 正在調用 generate_content，prompt長度: {len(prompt)}")
-            response = self.model.generate_content(prompt)
-            print(f"[AI] 成功生成回應: {response.text[:100]}...")
-            return response.text.strip()
+            response_text = self._call_with_retry(prompt)
+            print(f"[AI] 成功生成回應: {response_text[:100]}...")
+            return response_text.strip()
         except Exception as e:
             print(f"[AI生成失敗] 錯誤類型: {type(e).__name__}")
             print(f"[AI生成失敗] 錯誤訊息: {str(e)}")
@@ -189,9 +271,9 @@ class AIService:
 """
             try:
                 print(f"[AI] 嘗試 fallback prompt")
-                fallback_response = self.model.generate_content(fallback_prompt)
+                fallback_text = self._call_with_retry(fallback_prompt)
                 print(f"[AI] Fallback 成功")
-                return fallback_response.text.strip()
+                return fallback_text.strip()
             except Exception as e2:
                 print(f"[AI] Fallback 也失敗: {str(e2)}")
                 return "抱歉，我剛恍神了，可以再說一次嗎？"
@@ -216,8 +298,8 @@ class AIService:
 """
         
         try:
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
+            response_text = self._call_with_retry(prompt)
+            return response_text.strip()
         except Exception as e:
             # 如果生成失敗，使用預設模板
             summary_parts = []
@@ -326,8 +408,8 @@ class AIService:
 """
         
         try:
-            response = self.model.generate_content(prompt)
-            return response.text
+            response_text = self._call_with_retry(prompt)
+            return response_text
         except Exception as e:
             print(f"[AI服務] 報告生成失敗: {e}")
             return f"## 報告生成失敗\n\n錯誤信息: {str(e)}"

@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useApiState, ApiStateRenderer } from '../hooks/useApiState';
 import { API_ENDPOINTS } from '../config/api';
@@ -9,6 +9,7 @@ import type { SchoolNeed } from '../types';
 
 const NeedDetailPage = () => {
   const { needId } = useParams();
+  const navigate = useNavigate();
   const { userRole } = useAuth();
   const [sponsorModal, setSponsorModal] = useState<{ isOpen: boolean; need: SchoolNeed | null }>({
     isOpen: false,
@@ -43,6 +44,9 @@ const NeedDetailPage = () => {
       await apiService.sponsorNeed(sponsorModal.need.id, sponsorData);
       console.log('贊助成功！');
       setSponsorModal({ isOpen: false, need: null });
+      
+      // 跳轉到我的捐贈頁面
+      navigate('/dashboard/my-donations');
     } catch (error) {
       console.error('贊助失敗:', error);
     }
