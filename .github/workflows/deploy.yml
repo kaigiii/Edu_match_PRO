@@ -39,7 +39,8 @@ jobs:
       - name: 安裝相依套件
         run: |
           cd edu-match-pro-frontend
-          npm ci --legacy-peer-deps
+          rm -rf node_modules package-lock.json
+          npm install --legacy-peer-deps
           
       # 步驟 4：建置專案
       - name: 建置專案
