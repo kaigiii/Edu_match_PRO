@@ -45,7 +45,10 @@ const LoginPage = () => {
         
         // 更新認證狀態
         login(response.user.role);
-        navigate('/');
+        
+        // 根據角色跳轉到對應的儀表板
+        const dashboardPath = response.user.role === 'company' ? '/dashboard/company' : '/dashboard/school';
+        navigate(dashboardPath);
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -71,7 +74,10 @@ const LoginPage = () => {
         
         // 更新認證狀態
         login(response.user.role);
-        navigate('/');
+        
+        // 根據角色跳轉到對應的儀表板
+        const dashboardPath = response.user.role === 'company' ? '/dashboard/company' : '/dashboard/school';
+        navigate(dashboardPath);
       }
     } catch (err: any) {
       console.error('Demo login error:', err);

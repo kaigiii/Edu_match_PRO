@@ -410,6 +410,50 @@ class ApiService {
   async getDataStatistics(): Promise<any> {
     return this.request<any>('/data/statistics', { method: 'GET' });
   }
+
+  // ==================== AI 智能探索 API ====================
+  
+  /**
+   * AI 參數提取
+   */
+  async extractAIParameters(query: string, conversationHistory: any[] = []): Promise<{
+    extracted_params: any;
+    followup_question: string | null;
+    is_complete: boolean;
+  }> {
+    return this.request<{
+      extracted_params: any;
+      followup_question: string | null;
+      is_complete: boolean;
+    }>('/ai/extract_parameters', {
+      method: 'POST',
+      body: JSON.stringify({
+        query,
+        conversation_history: conversationHistory
+      })
+    });
+  }
+
+  /**
+   * AI 策略分析
+   */
+  async analyzeAIStrategy(userParams: any, conversationHistory: any[] = []): Promise<{
+    report: string;
+    school_data: any;
+    statistics: any;
+  }> {
+    return this.request<{
+      report: string;
+      school_data: any;
+      statistics: any;
+    }>('/ai/analyze', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_params: userParams,
+        conversation_history: conversationHistory
+      })
+    });
+  }
 }
 
 // 導出單例實例

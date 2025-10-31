@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
+    # AI 服務配置
+    gemini_api_key: Optional[str] = None
+    
     # Demo user passwords (for local/demo only)
     demo_school_password: str = "demo_school_2024"
     demo_company_password: str = "demo_company_2024"

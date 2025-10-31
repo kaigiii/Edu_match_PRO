@@ -22,6 +22,7 @@ from app.crud.need_crud import (
 from app.crud.dashboard_crud import get_school_dashboard_stats as get_school_stats, get_company_dashboard_stats as get_company_stats, get_platform_stats
 from app.crud.donation_crud import get_donations_by_company
 from app.crud.activity_log_crud import get_recent_activity as get_user_activity
+from app.crud.smart_exploration_crud import query_schools_by_criteria
 
 # 導入模擬數據
 from app.data.mock_data import RECENT_PROJECTS, IMPACT_STORIES
@@ -795,3 +796,153 @@ async def get_recent_activity(
     """獲取最近活動"""
     activities = await get_user_activity(session, current_user.id)
     return activities
+
+
+# ==================== 智能探索 API ====================
+
+from pydantic import BaseModel
+from typing import Optional
+
+class AIExtractionRequest(BaseModel):
+    """AI 參數提取請求"""
+    query: str
+    conversation_history: Optional[List[dict]] = []
+
+class AIExtractionResponse(BaseModel):
+    """AI 參數提取響應"""
+    extracted_params: dict
+    followup_question: Optional[str] = None
+    is_complete: bool = False
+
+class AIAnalysisRequest(BaseModel):
+    """AI 分析請求"""
+    user_params: dict
+    conversation_history: Optional[List[dict]] = []
+
+@router.post("/ai/extract_parameters")
+async def extract_parameters(
+    request: AIExtractionRequest,
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    從用戶查詢中提取捐贈參數
+    """
+    print(f"\n{'='*60}")
+    print(f"[API] 收到 AI 參數提取請求")
+    print(f"[API] 用戶查詢: {request.query}")
+    print(f"[API] 對話歷史長度: {len(request.conversation_history)}")
+    print(f"{'='*60}\n")
+    
+    try:
+        from app.core.ai_service import get_ai_service
+        ai_service = get_ai_service()
+        
+        print(f"[API] AI 服務已初始化")
+        
+        # 提取參數
+        print(f"[API] 開始提取參數...")
+        extracted_params = ai_service.extract_donation_parameters(
+            request.query, 
+            request.conversation_history
+        )
+        print(f"[API] 提取的參數: {extracted_params}")
+        
+        # 清理 null 值，避免覆蓋前端已有的參數
+        extracted_params = {k: v for k, v in extracted_params.items() if v is not None}
+        print(f"[API] 清理後的參數: {extracted_params}")
+        
+        # 檢查必要參數是否都已收集
+        required_fields = ["resource_type", "target_counties"]
+        is_params_complete = all(extracted_params.get(field) for field in required_fields)
+        print(f"[API] 參數完整性: {is_params_complete}")
+        
+        # 生成追問問題或確認問題
+        print(f"[API] 開始生成追問問題...")
+        followup_question = ai_service.generate_followup_question(
+            extracted_params,
+            request.conversation_history
+        )
+        print(f"[API] 追問問題生成完成: {followup_question[:100] if followup_question else 'None'}...")
+        
+        response_data = AIExtractionResponse(
+            extracted_params=extracted_params,
+            followup_question=followup_question,
+            is_complete=is_params_complete  # 必要參數都收集完成
+        )
+        
+        print(f"\n[API] ✅ 請求處理完成，準備返回")
+        print(f"[API] 返回數據: extracted_params={extracted_params}, is_complete={is_params_complete}")
+        print(f"{'='*60}\n")
+        
+        return response_data
+    except ValueError as e:
+        # AI 服務未初始化（缺少 API 金鑰）
+        print(f"\n[API] ❌ AI 服務不可用")
+        print(f"[API] 錯誤: {str(e)}")
+        print(f"{'='*60}\n")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"AI 服務不可用: {str(e)}"
+        )
+    except Exception as e:
+        print(f"\n[API] ❌ 參數提取失敗")
+        print(f"[API] 錯誤類型: {type(e).__name__}")
+        print(f"[API] 錯誤訊息: {str(e)}")
+        import traceback
+        print(f"[API] 完整錯誤:\n{traceback.format_exc()}")
+        print(f"{'='*60}\n")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"參數提取失敗: {str(e)}"
+        )
+
+
+@router.post("/ai/analyze")
+async def analyze_donation_strategy(
+    request: AIAnalysisRequest,
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    根據用戶參數生成捐贈策略分析報告
+    """
+    try:
+        from app.core.ai_service import get_ai_service
+        ai_service = get_ai_service()
+        
+        # 從數據庫查詢相關學校數據（省 API 方式）
+        school_data = await query_schools_by_criteria(
+            session,
+            counties=request.user_params.get("target_counties"),
+            area_type=request.user_params.get("area_type"),
+            limit=50  # 限制數量以節省處理時間
+        )
+        
+        # 調試日誌
+        print(f"[AI分析] 用戶參數: {request.user_params}")
+        print(f"[AI分析] 查詢到的學校數: {len(school_data.get('faraway_schools', []))}")
+        print(f"[AI分析] 統計數據: {school_data.get('statistics', {})}")
+        if school_data.get('faraway_schools'):
+            print(f"[AI分析] 學校樣本: {school_data['faraway_schools'][:3]}")
+        
+        # 生成分析報告
+        report = ai_service.generate_analysis_report(
+            request.user_params,
+            school_data,
+            school_data.get("statistics", {})
+        )
+        
+        return {
+            "report": report,
+            "school_data": school_data,
+            "statistics": school_data.get("statistics", {})
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"AI 服務不可用: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"分析失敗: {str(e)}"
+        )

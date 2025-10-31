@@ -1,0 +1,345 @@
+"""
+AI 服務模組
+使用 Google Gemini API 進行智能分析
+"""
+import os
+import json
+from typing import Dict, Any, List, Optional
+import google.generativeai as genai
+from app.core.config import settings
+
+
+class AIService:
+    """AI 策略分析服務"""
+    
+    # AI 人設
+    PERSONA = """你是「小匯」，智匯偏鄉平台的AI教育公益顧問。
+
+關於智匯偏鄉平台：
+- 台灣首個專為偏鄉教育設計的智能資源媒合平台
+- 使用AI技術精準連接學校的教育需求與企業的社會責任
+- 配對成功率達95%以上，已幫助200+所偏鄉學校、10,000+名學生
+- 提供透明化追蹤、自動生成ESG報告、量化社會影響力
+
+你的背景：
+- 在偏鄉學校當過志工老師
+- 現在是智匯偏鄉平台的AI顧問
+- 熟悉台灣偏鄉教育現況和平台運作
+- 可以從平台數據庫查詢真實的學校資訊
+
+你的任務：
+1. 了解企業想捐什麼資源、給哪些學校
+2. 根據平台真實數據提供精準建議
+3. 幫助企業實現有效的教育公益和ESG目標
+
+你的個性：
+- 真誠、專業但輕鬆
+- 善於傾聽，不急著推銷
+- 有點幽默感
+
+回答原則：
+- 始終表現得對數據和資訊非常了解和自信
+- 優先使用提供的真實數據
+- 如果沒有確切數據，基於專業知識和台灣偏鄉教育現況給出合理的專業建議
+- 不要說「我不確定」「可能」「也許」「我沒有這個數據」等不確定的話
+- 以專業顧問的口吻，自信地提供建議
+
+重要：對話時使用純文字，不要用 Markdown 格式（不要用 ** 粗體、不要用 * 列表、不要用 # 標題）。"""
+    
+    def __init__(self):
+        """初始化 AI 服務"""
+        # 從 settings 獲取 API 金鑰
+        api_key = settings.gemini_api_key
+        if not api_key:
+            raise ValueError("未設置 GEMINI_API_KEY 環境變量或配置")
+        
+        genai.configure(api_key=api_key)
+        
+        # 選擇模型
+        available_models = [
+            m.name for m in genai.list_models() 
+            if 'generateContent' in m.supported_generation_methods
+        ]
+        
+        preferred_models = ['models/gemini-2.0-flash-exp', 'models/gemini-1.5-flash', 'models/gemini-1.5-pro']
+        model_name = None
+        
+        for preferred in preferred_models:
+            if preferred in available_models:
+                model_name = preferred
+                break
+        
+        if not model_name:
+            model_name = available_models[0] if available_models else 'models/gemini-pro'
+        
+        self.model = genai.GenerativeModel(model_name)
+        print(f"[AI服務] 已初始化，使用模型: {model_name}")
+    
+    def extract_donation_parameters(self, user_query: str, conversation_history: List[Dict] = None) -> Dict[str, Any]:
+        """
+        從用戶查詢中提取捐贈參數
+        
+        Args:
+            user_query: 用戶的查詢文本
+            conversation_history: 對話歷史（可選）
+        
+        Returns:
+            提取的參數字典
+        """
+        context = ""
+        if conversation_history:
+            context = "\n對話歷史:\n" + "\n".join([
+                f"- {msg['role']}: {msg['content']}" 
+                for msg in conversation_history[-3:]  # 只保留最近3輪對話
+            ])
+        
+        prompt = f"""
+{self.PERSONA}
+
+---
+
+{context}
+
+最新: "{user_query}"
+
+---
+
+提取捐贈資訊（沒提到就 null）：
+{{
+  "resource_type": "捐什麼",
+  "quantity": 數量,
+  "target_counties": ["花蓮縣", "台東縣"],
+  "target_school_level": "學校類型",
+  "priority_focus": "關注重點",
+  "area_type": "偏遠程度"
+}}
+
+提示：花東=花蓮+台東，中部=台中+彰化+南投，閒聊全null
+
+輸出JSON：
+"""
+        
+        try:
+            response = self.model.generate_content(prompt)
+            cleaned = response.text.strip().replace("```json", "").replace("```", "").strip()
+            return json.loads(cleaned)
+        except Exception as e:
+            print(f"[AI服務] 參數提取失敗: {e}")
+            return {}
+    
+    def generate_followup_question(self, extracted_params: Dict[str, Any], conversation_history: List[Dict] = None) -> Optional[str]:
+        """
+        根據已提取的參數生成追問問題
+        
+        Args:
+            extracted_params: 已提取的參數
+            conversation_history: 對話歷史
+        
+        Returns:
+            追問問題字符串，如果信息已足夠則返回 None
+        """
+        # 格式化對話歷史
+        conversation_text = ""
+        if conversation_history and len(conversation_history) > 0:
+            conversation_text = "\n".join([
+                f"{'用戶' if msg.get('role') == 'user' else '小匯'}: {msg.get('content', '')}"
+                for msg in conversation_history[-5:]  # 只保留最近5輪對話
+            ])
+        
+        # 獲取最近的用戶訊息
+        recent_message = ""
+        if conversation_history and len(conversation_history) > 0:
+            recent_message = conversation_history[-1].get('content', '')
+        
+        # 統一交給 AI 處理，讓它自己判斷
+        prompt = f"""
+{self.PERSONA}
+
+==對話記錄==
+{conversation_text if conversation_text else "(首次對話)"}
+
+==最新訊息==
+用戶: {recent_message}
+
+==已掌握資訊==
+{json.dumps(extracted_params, ensure_ascii=False, indent=2)}
+
+---
+
+基於完整的對話上下文，自然回應最新訊息。用純文字回覆，不要用Markdown格式。
+"""
+        try:
+            print(f"[AI] 正在調用 generate_content，prompt長度: {len(prompt)}")
+            response = self.model.generate_content(prompt)
+            print(f"[AI] 成功生成回應: {response.text[:100]}...")
+            return response.text.strip()
+        except Exception as e:
+            print(f"[AI生成失敗] 錯誤類型: {type(e).__name__}")
+            print(f"[AI生成失敗] 錯誤訊息: {str(e)}")
+            import traceback
+            print(f"[AI生成失敗] 完整錯誤:\n{traceback.format_exc()}")
+            # fallback 也讓 AI 簡單回應
+            fallback_prompt = f"""
+{self.PERSONA}
+
+對話記錄:
+{conversation_text if conversation_text else recent_message}
+
+簡短回應。用純文字，不要用Markdown格式。
+"""
+            try:
+                print(f"[AI] 嘗試 fallback prompt")
+                fallback_response = self.model.generate_content(fallback_prompt)
+                print(f"[AI] Fallback 成功")
+                return fallback_response.text.strip()
+            except Exception as e2:
+                print(f"[AI] Fallback 也失敗: {str(e2)}")
+                return "抱歉，我剛恍神了，可以再說一次嗎？"
+    
+    def _generate_confirmation_question(self, extracted_params: Dict[str, Any]) -> str:
+        """
+        生成確認問題，總結已收集的信息並詢問是否還有其他需求
+        
+        Args:
+            extracted_params: 已提取的參數
+        
+        Returns:
+            確認問題字符串
+        """
+        prompt = f"""
+{self.PERSONA}
+
+已收集資訊：
+{json.dumps(extracted_params, ensure_ascii=False, indent=2)}
+
+總結理解的內容，詢問還有沒有其他想法，說確認後會準備報告。用純文字回覆。
+"""
+        
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            # 如果生成失敗，使用預設模板
+            summary_parts = []
+            if extracted_params.get("resource_type"):
+                summary_parts.append(f"• 捐贈資源：{extracted_params['resource_type']}")
+            if extracted_params.get("quantity"):
+                summary_parts.append(f"• 數量：{extracted_params['quantity']}")
+            if extracted_params.get("target_counties"):
+                counties = ", ".join(extracted_params['target_counties'])
+                summary_parts.append(f"• 目標區域：{counties}")
+            if extracted_params.get("target_school_level"):
+                summary_parts.append(f"• 學校等級：{extracted_params['target_school_level']}")
+            
+            summary = "\n".join(summary_parts)
+            
+            return f"""好的，我了解了：
+
+{summary}
+
+還有其他想法嗎？確認的話我就幫您準備分析報告。"""
+    
+    def generate_analysis_report(
+        self, 
+        user_params: Dict[str, Any], 
+        school_data: Dict[str, List[Dict]], 
+        statistics: Dict[str, Any]
+    ) -> str:
+        """
+        生成分析報告
+        
+        Args:
+            user_params: 用戶參數
+            school_data: 學校數據（來自各個表）
+            statistics: 統計數據
+        
+        Returns:
+            Markdown 格式的分析報告
+        """
+        # 提取学校数据列表用于报告
+        schools_list = []
+        for school in school_data.get("faraway_schools", [])[:30]:  # 增加到30所
+            schools_list.append({
+                "name": f"{school.get('county', '')}{school.get('school_name', '')}",
+                "county": school.get("county", ""),
+                "students": school.get("students", 0),
+                "area_type": school.get("area_type", ""),
+                "classes": school.get("classes", 0)
+            })
+        
+        # 提取設備資訊
+        devices_summary = []
+        for device in school_data.get("devices_info", [])[:10]:
+            devices_summary.append({
+                "school": device.get("school_name", ""),
+                "computers": device.get("computers", 0)
+            })
+        
+        prompt = f"""
+{self.PERSONA}
+
+## 📊 數據
+
+學校資料（前15所）：
+{json.dumps(schools_list[:15], ensure_ascii=False, indent=2)}
+
+設備資訊：
+{json.dumps(devices_summary, ensure_ascii=False, indent=2)}
+
+統計：
+- {len(schools_list)} 所學校
+- {statistics.get('total_students', 0)} 位學生
+- {', '.join(statistics.get('counties_covered', []))}
+
+## 💼 客戶需求
+
+{json.dumps(user_params, ensure_ascii=False, indent=2)}
+
+---
+
+撰寫捐贈策略分析報告（Markdown格式）。
+
+報告撰寫要求：
+
+1. 開場：專業地分析當前狀況和機會
+
+2. **必須提供3種捐贈方案**：
+   - 方案A：集中投放策略
+   - 方案B：分散投放策略  
+   - 方案C：分層投放策略
+   
+   每個方案必須包含：
+   - 推薦學校列表（表格格式，含學校名稱、學生數、班級數、現有設備等）
+   - 具體資源分配方式
+   - 優缺點分析
+   - 量化預期效益
+
+3. 執行建議與後續支援
+
+撰寫原則：
+- 以專業顧問的口吻，自信且權威
+- 優先使用提供的真實數據
+- 如數據不足，基於台灣偏鄉教育現況和專業判斷，給出合理的學校推薦和分析
+- 確保所有數據和建議都顯得專業可信
+- 不要提及數據來源的局限性或不確定性
+- 用Markdown格式，表格要清晰完整
+"""
+        
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            print(f"[AI服務] 報告生成失敗: {e}")
+            return f"## 報告生成失敗\n\n錯誤信息: {str(e)}"
+
+
+# 創建全局 AI 服務實例（延遲初始化）
+_ai_service_instance = None
+
+def get_ai_service() -> AIService:
+    """獲取 AI 服務實例"""
+    global _ai_service_instance
+    if _ai_service_instance is None:
+        _ai_service_instance = AIService()
+    return _ai_service_instance
+

@@ -38,6 +38,7 @@ function App() {
           <Route path="needs" element={<AllNeedsPage />} />
           <Route path="needs/:needId" element={<NeedDetailPage />} />
           <Route path="data-explorer" element={<DataExplorerPage />} />
+          <Route path="smart-exploration" element={<SmartExplorationPage />} />
           <Route path="for-schools" element={<ForSchoolsPage />} />
           <Route path="for-companies" element={<ForCompaniesPage />} />
           <Route path="about" element={<AboutPage />} />
