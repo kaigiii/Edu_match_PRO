@@ -1,14 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import NeedCard from '../components/NeedCard';
+import SponsorModal from '../components/SponsorModal';
 import { useApiState, ApiStateRenderer } from '../hooks/useApiState';
 import { API_ENDPOINTS } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
+import apiService from '../services/apiService';
 import type { SchoolNeed } from '../types';
 
 const ExploreNeedsPage = () => {
   const { userRole } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [sponsorModal, setSponsorModal] = useState<{ isOpen: boolean; need: SchoolNeed | null }>({
+    isOpen: false,
+    need: null
+  });
   
   // 根據用戶角色選擇不同的端點
   const endpoint = userRole === 'company' ? API_ENDPOINTS.COMPANY_NEEDS : API_ENDPOINTS.SCHOOL_NEEDS;
@@ -29,6 +37,31 @@ const ExploreNeedsPage = () => {
     
     return categoryMatch && searchMatch;
   }) || [];
+
+  // 處理贊助功能
+  const handleSponsor = (need: SchoolNeed) => {
+    setSponsorModal({ isOpen: true, need });
+  };
+
+  const handleSponsorConfirm = async (sponsorData: { donation_type: string; description: string }) => {
+    if (!sponsorModal.need) return;
+
+    try {
+      await apiService.sponsorNeed(sponsorModal.need.id, sponsorData);
+      console.log('贊助成功！');
+      setSponsorModal({ isOpen: false, need: null });
+      
+      // 跳轉到我的捐贈頁面
+      navigate('/dashboard/my-donations');
+    } catch (error) {
+      console.error('贊助失敗:', error);
+      // 可以在這裡添加錯誤提示
+    }
+  };
+
+  const handleSponsorClose = () => {
+    setSponsorModal({ isOpen: false, need: null });
+  };
 
   if (state.isLoading) {
     return (
@@ -81,10 +114,22 @@ const ExploreNeedsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredNeeds.map((need) => (
-            <NeedCard key={need.id} need={need} />
+            <NeedCard 
+              key={need.id} 
+              need={need} 
+              onSponsor={handleSponsor}
+            />
           ))}
         </div>
       )}
+
+      {/* 贊助彈窗 */}
+      <SponsorModal
+        isOpen={sponsorModal.isOpen}
+        onClose={handleSponsorClose}
+        need={sponsorModal.need}
+        onConfirm={handleSponsorConfirm}
+      />
     </div>
   );
 };

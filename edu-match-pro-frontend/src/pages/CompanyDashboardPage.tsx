@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import { 
@@ -35,6 +36,7 @@ interface RecentProject {
 
 const CompanyDashboardPage = () => {
   const { userRole } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'impact' | 'analytics'>('overview');
   const [companyStats, setCompanyStats] = useState<CompanyDashboardStats | null>(null);
   const [sponsorModal, setSponsorModal] = useState<{ isOpen: boolean; need: SchoolNeed | null }>({
@@ -79,9 +81,11 @@ const CompanyDashboardPage = () => {
 
     try {
       await apiService.sponsorNeed(sponsorModal.need.id, sponsorData);
-      // 可以在這裡添加成功提示
       console.log('贊助成功！');
       setSponsorModal({ isOpen: false, need: null });
+      
+      // 跳轉到我的捐贈頁面
+      navigate('/dashboard/my-donations');
     } catch (error) {
       console.error('贊助失敗:', error);
       // 可以在這裡添加錯誤提示
