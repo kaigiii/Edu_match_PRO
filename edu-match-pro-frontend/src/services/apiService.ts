@@ -106,6 +106,7 @@ class ApiService {
           ...options,
           headers: {
             'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',  // 跳過 ngrok 警告頁面
             ...authHeaders,
             ...options.headers,
           },
