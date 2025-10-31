@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     demo_rural_school_password: str = "demo_rural_2024"
     
     # CORS 配置優化
-    cors_origins: Union[list[str], str] = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,https://charlesetta-indignant-horacio.ngrok-free.dev,https://pedigreed-uncompulsively-reece.ngrok-free.dev"
+    # 本地開發 + GitHub Pages + ngrok 後端
+    cors_origins: Union[list[str], str] = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,https://kaigiii.github.io,https://pedigreed-uncompulsively-reece.ngrok-free.dev"
     
     @field_validator('cors_origins', mode='before')
     @classmethod
