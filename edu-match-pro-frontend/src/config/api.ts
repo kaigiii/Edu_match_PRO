@@ -6,6 +6,9 @@
 // 檢查是否為開發環境
 const isDevelopment = import.meta.env.DEV;
 
+// 檢查是否在 GitHub Pages 上運行
+const isGitHubPages = window.location.hostname === 'kaigiii.github.io';
+
 // 獲取 API 基礎 URL（優先使用環境變數）
 const getBaseURL = (): string => {
   // 1. 優先使用環境變數
@@ -13,13 +16,18 @@ const getBaseURL = (): string => {
     return import.meta.env.VITE_API_BASE_URL;
   }
   
-  // 2. 開發環境默認使用 localhost
+  // 2. GitHub Pages 生產環境使用 ngrok 後端
+  if (isGitHubPages) {
+    return 'https://pedigreed-uncompulsively-reece.ngrok-free.dev';
+  }
+  
+  // 3. 本地開發環境使用 localhost 後端
   if (isDevelopment) {
     return 'http://localhost:3001';
   }
   
-  // 3. 生產環境默認（但應該通過環境變數設置）
-  return 'https://api.edu-match-pro.com';
+  // 4. 其他情況默認使用 localhost（安全起見）
+  return 'http://localhost:3001';
 };
 
 // API 基礎 URL 配置
