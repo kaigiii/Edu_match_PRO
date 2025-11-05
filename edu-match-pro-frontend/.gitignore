@@ -1,59 +1,30 @@
-# Dependencies
+# 依賴套件
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# Build outputs
+# 編譯輸出
 dist/
 dist-ssr/
-build/
+*.local
 
-# Environment variables
+# 環境變數
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
-# Logs
+# 日誌
 logs/
 *.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Coverage
-coverage/
-.nyc_output/
-
-# TypeScript cache
-*.tsbuildinfo
-
-# ESLint cache
-.eslintcache
-
-# Vite cache
-.vite/
-
-# OS generated files
+# macOS
 .DS_Store
-.DS_Store?
-._*
-Thumbs.db
 
-# Editor directories
+# IDE
 .vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
 .idea/
-
-# Temporary files
-*.tmp
 *.swp
 *.swo
 
-# Security
-*.pem
-*.key
-*.crt
