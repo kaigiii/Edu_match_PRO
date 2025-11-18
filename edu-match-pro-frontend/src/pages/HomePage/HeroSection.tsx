@@ -77,12 +77,12 @@ const HeroSection = () => {
           loop
           playsInline
           preload="metadata"
-          poster={`${import.meta.env.PROD ? '/Edu_macth_PRO' : ''}/videos/taiwan-education-poster.jpg`}
+          poster={`${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/videos/taiwan-education-poster.jpg`}
           initial={{ opacity: 0 }}
           animate={{ opacity: videoLoaded ? 1 : 0 }}
           transition={{ duration: 0.8 }}
         >
-          <source src={`${import.meta.env.PROD ? '/Edu_macth_PRO' : ''}/videos/taiwan-education.mp4`} type="video/mp4" />
+          <source src={`${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/videos/taiwan-education.mp4`} type="video/mp4" />
           您的瀏覽器不支援影片播放。
         </motion.video>
       )}

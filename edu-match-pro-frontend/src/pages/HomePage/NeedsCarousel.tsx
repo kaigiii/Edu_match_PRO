@@ -94,7 +94,7 @@ const NeedsCarousel = ({ needs }: NeedsCarouselProps) => {
         ref={sectionRef} 
         className="min-h-[80vh] relative py-16 overflow-hidden"
         style={{
-          backgroundImage: `url("${import.meta.env.PROD ? '/Edu_macth_PRO' : ''}/images/bg-4.jpg")`,
+          backgroundImage: `url("${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/bg-4.jpg")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
@@ -112,7 +112,7 @@ const NeedsCarousel = ({ needs }: NeedsCarouselProps) => {
       ref={sectionRef} 
       className="min-h-[80vh] relative py-16 overflow-hidden"
       style={{
-        backgroundImage: `url("${import.meta.env.PROD ? '/Edu_macth_PRO' : ''}/images/bg-4.jpg")`,
+        backgroundImage: `url("${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/bg-4.jpg")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'

@@ -7,7 +7,7 @@ import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter basename={import.meta.env.PROD ? "/Edu_macth_PRO" : "/"}>
+    <BrowserRouter basename={import.meta.env.PROD ? "/Edu_match_PRO" : "/"}>
       <AuthProvider>
         <App />
       </AuthProvider>

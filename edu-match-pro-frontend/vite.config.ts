@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   
   return {
     plugins: [react()],
-    base: isProduction ? '/Edu_macth_PRO/' : '/',
+    base: isProduction ? '/Edu_match_PRO/' : '/',
   
   // 開發伺服器配置
   server: {

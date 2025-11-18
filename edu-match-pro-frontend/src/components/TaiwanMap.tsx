@@ -105,7 +105,7 @@ export const TaiwanMap = forwardRef<TaiwanMapRef, TaiwanMapProps>(({
       };
       
       // 設置圖片屬性
-      img.src = `${import.meta.env.PROD ? '/Edu_macth_PRO' : ''}/images/taiwan-map.png`;
+      img.src = `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/taiwan-map.png`;
       img.alt = '台灣地圖';
       img.className = 'w-full h-full object-contain';
       img.style.cursor = 'pointer';

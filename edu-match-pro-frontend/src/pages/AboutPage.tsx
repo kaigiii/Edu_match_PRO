@@ -16,19 +16,19 @@ const AboutPage = () => {
       name: "范愷鈞",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
-      avatar: `${import.meta.env.PROD ? '/Edu_macth_PRO' : ''}/images/team/member-1.jpg`
+      avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-1.jpg`
     },
     {
       name: "劉竑毅",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
-      avatar: `${import.meta.env.PROD ? '/Edu_macth_PRO' : ''}/images/team/member-2.jpg`
+      avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-2.jpg`
     },
     {
       name: "史靖崴",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
-      avatar: `${import.meta.env.PROD ? '/Edu_macth_PRO' : ''}/images/team/member-3.jpg`
+      avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-3.jpg`
     }
   ];
 
