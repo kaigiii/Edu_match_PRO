@@ -2,9 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  plugins: [react()],
-  base: mode === 'production' ? '/Edu_macth_PRO/' : '/',
+export default defineConfig(({ mode }) => {
+  // 確保在生產環境或 GitHub Pages 部署時使用正確的 base path
+  const isProduction = mode === 'production'
+  
+  return {
+    plugins: [react()],
+    base: isProduction ? '/Edu_macth_PRO/' : '/',
   
   // 開發伺服器配置
   server: {
@@ -33,5 +37,6 @@ export default defineConfig(({ mode }) => ({
       }
     }
   }
-}))
+  }
+})
 

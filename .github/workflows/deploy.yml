@@ -46,7 +46,7 @@ jobs:
       - name: 建置專案
         run: |
           cd edu-match-pro-frontend
-          npm run build
+          npm run build -- --mode production
         env:
           NODE_ENV: production
           
