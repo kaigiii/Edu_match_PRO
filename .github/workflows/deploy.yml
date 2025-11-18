@@ -39,8 +39,10 @@ jobs:
       - name: 安裝相依套件
         run: |
           cd edu-match-pro-frontend
-          # 嘗試使用 npm ci，如果失敗則回退到 npm install
-          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+          # 清理 node_modules 以避免緩存問題
+          rm -rf node_modules
+          # 使用 npm install 確保可選依賴（如 rollup 平台特定依賴）被正確安裝
+          npm install --legacy-peer-deps
           
       # 步驟 4：建置專案
       - name: 建置專案

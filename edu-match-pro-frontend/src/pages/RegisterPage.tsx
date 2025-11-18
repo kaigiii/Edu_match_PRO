@@ -233,8 +233,8 @@ const RegisterPage = () => {
         >
           {/* Logo and Welcome */}
           <div className="text-center mb-8">
-            <div className="text-3xl font-bold text-blue-600 mb-2">智匯偏鄉 Edu macth PRO</div>
-            <h1 className="text-2xl font-bold text-gray-900">歡迎加入智匯偏鄉 Edu macth PRO</h1>
+            <div className="text-3xl font-bold text-blue-600 mb-2">智匯偏鄉 Edu match PRO</div>
+            <h1 className="text-2xl font-bold text-gray-900">歡迎加入智匯偏鄉 Edu match PRO</h1>
             <p className="text-gray-600 mt-2">請選擇您的身份並完成註冊</p>
           </div>
 

@@ -22,7 +22,7 @@
 ## 目錄結構
 
 ```
-Edu_macth_pro/
+Edu_match_pro/
 ├── edu-match-pro-backend/     # 後端 API
 │   ├── app/
 │   │   ├── api/              # API 路由

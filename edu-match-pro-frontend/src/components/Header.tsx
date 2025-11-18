@@ -73,7 +73,7 @@ const Header = () => {
               setMobileOpen(false);
             }}
           >
-            智匯偏鄉 Edu macth PRO
+            智匯偏鄉 Edu match PRO
           </Link>
         </motion.div>
 

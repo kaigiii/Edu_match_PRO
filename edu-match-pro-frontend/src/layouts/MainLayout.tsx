@@ -29,7 +29,7 @@ const MainLayout = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
             >
               <div className="mb-4">
-                <h3 className="text-2xl font-bold text-white mb-2">智匯偏鄉 Edu macth PRO</h3>
+                <h3 className="text-2xl font-bold text-white mb-2">智匯偏鄉 Edu match PRO</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
                   連接資源，點亮台灣教育的未來
                 </p>
@@ -157,7 +157,7 @@ const MainLayout = () => {
           >
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="text-gray-400 text-sm mb-4 md:mb-0">
-                <p>© 2025 智匯偏鄉 Edu macth PRO. All Rights Reserved.</p>
+                <p>© 2025 智匯偏鄉 Edu match PRO. All Rights Reserved.</p>
                 <p className="text-xs mt-1">由 范愷鈞、劉竑毅、史靖崴 共同打造</p>
               </div>
               <div className="flex space-x-6 text-sm">

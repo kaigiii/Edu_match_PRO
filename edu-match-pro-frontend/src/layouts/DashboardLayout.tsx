@@ -18,7 +18,7 @@ const DashboardLayout = () => {
         <div className="bg-white px-6 py-4">
           <Link to="/" className="block text-xl font-bold text-gray-900 leading-tight">
             <span className="block">智匯偏鄉</span>
-            <span className="block">Edu macth PRO</span>
+            <span className="block">Edu match PRO</span>
           </Link>
         </div>
         <div className="p-6">
