@@ -32,17 +32,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: edu-match-pro-frontend/package-lock.json
+          # 不使用緩存，因為我們會刪除 package-lock.json 來修復 rollup 依賴問題
           
       # 步驟 3：安裝相依套件
       - name: 安裝相依套件
         run: |
           cd edu-match-pro-frontend
-          # 清理 node_modules 以避免緩存問題
-          rm -rf node_modules
-          # 使用 npm install 確保可選依賴（如 rollup 平台特定依賴）被正確安裝
+          # 完全清理以避免 rollup 可選依賴的緩存問題
+          rm -rf node_modules package-lock.json
+          # 重新安裝所有依賴，確保可選依賴（如 @rollup/rollup-linux-x64-gnu）被正確安裝
           npm install --legacy-peer-deps
+          # 驗證 rollup 的可選依賴是否已安裝
+          ls -la node_modules/@rollup/rollup-linux-x64-gnu 2>/dev/null || echo "警告：rollup 平台依賴未找到，但繼續構建"
           
       # 步驟 4：建置專案
       - name: 建置專案
