@@ -70,11 +70,51 @@ async def generate_comprehensive_proposal(context: str):
     
     print("All Strategy Agents responded.")
     
-    # 組合最終報告
+    print("All Strategy Agents responded.")
+    
+    # 解析回應以建立結構化資料 (Parse responses for structured data)
+    import re
+    import json
+    
+    def parse_strategy(text, strategy_type):
+        data = {"type": strategy_type, "content": text}
+        try:
+            if strategy_type == "A":
+                school_match = re.search(r"School Name:\*\*\s*(.*)", text)
+                allocation_match = re.search(r"Allocation:\*\*\s*(.*)", text)
+                data["title"] = "集中火力型 (Focus)"
+                data["school"] = school_match.group(1).strip() if school_match else "Unknown"
+                data["allocation"] = allocation_match.group(1).strip() if allocation_match else "Unknown"
+            elif strategy_type == "B":
+                area_match = re.search(r"Target Area:\*\*\s*(.*)", text)
+                data["title"] = "區域共好型 (Spread)"
+                data["area"] = area_match.group(1).strip() if area_match else "Unknown"
+            elif strategy_type == "C":
+                school_match = re.search(r"Target School\(s\):\*\*\s*(.*)", text)
+                data["title"] = "雪中送炭型 (Gap-Filling)"
+                data["school"] = school_match.group(1).strip() if school_match else "Unknown"
+        except Exception as e:
+            print(f"Error parsing strategy {strategy_type}: {e}")
+        return data
+
+    report_data = {
+        "strategies": [
+            parse_strategy(response_a, "A"),
+            parse_strategy(response_b, "B"),
+            parse_strategy(response_c, "C")
+        ]
+    }
+    
+    # 組合最終報告 (Combine final report)
+    # 我們將 JSON 數據嵌入在一個特殊的區塊中，供前端解析
     final_report = f"""
 ### 專業捐贈策略分析報告
 
 根據您的需求與資料庫分析，我們為您規劃了以下三個具體方案：
+
+```json:report
+{json.dumps(report_data, ensure_ascii=False, indent=2)}
+```
 
 {response_a}
 

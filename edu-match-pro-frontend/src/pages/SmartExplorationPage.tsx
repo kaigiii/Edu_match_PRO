@@ -8,11 +8,26 @@ import {
 import { apiService } from '../services/apiService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ReportCard from '../components/ReportCard';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
+
+// Helper function to extract report data
+const extractReportData = (content: string) => {
+  const match = content.match(/```json:report\n([\s\S]*?)\n```/);
+  if (match && match[1]) {
+    try {
+      return JSON.parse(match[1]);
+    } catch (e) {
+      console.error("Failed to parse report JSON", e);
+      return null;
+    }
+  }
+  return null;
+};
 
 const SmartExplorationPage = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -125,32 +140,39 @@ const SmartExplorationPage = () => {
                 transition={{ duration: 0.3 }}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-[85%] rounded-2xl p-5 shadow-sm ${message.role === 'user'
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-tr-none'
-                    : 'bg-white border border-gray-100 text-gray-900 rounded-tl-none shadow-md'
-                    }`}
-                >
-                  {message.role === 'assistant' ? (
-                    <div className="prose prose-sm max-w-none
-                      prose-headings:font-bold prose-headings:text-gray-800
-                      prose-p:text-gray-700 prose-p:leading-relaxed
-                      prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-                      prose-strong:text-purple-700 prose-strong:font-bold
-                      prose-ul:list-disc prose-ul:pl-4
-                      prose-ol:list-decimal prose-ol:pl-4
-                      prose-li:my-1
-                      prose-blockquote:border-l-4 prose-blockquote:border-purple-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:bg-gray-50 prose-blockquote:py-2 prose-blockquote:pr-2 prose-blockquote:rounded-r
-                      prose-hr:border-gray-200 prose-hr:my-4
-                    ">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content}
-                      </ReactMarkdown>
-                    </div>
-                  ) : (
-                    <div className="whitespace-pre-wrap text-base">{message.content}</div>
-                  )}
-                </div>
+                {message.role === 'assistant' && extractReportData(message.content) ? (
+                  // Report Card - Full Width, No Container
+                  <ReportCard data={extractReportData(message.content)!} />
+                ) : (
+                  // Regular Message - 85% Width Container
+                  <div
+                    className={`max-w-[85%] rounded-2xl p-5 shadow-sm ${message.role === 'user'
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-tr-none'
+                      : 'bg-white border border-gray-100 text-gray-900 rounded-tl-none shadow-md'
+                      }`}
+                  >
+                    {message.role === 'assistant' ? (
+                      <div className="prose prose-sm max-w-none
+                        prose-headings:font-bold prose-headings:text-gray-800
+                        prose-p:text-gray-700 prose-p:leading-relaxed
+                        prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+                        prose-strong:text-purple-700 prose-strong:font-bold
+                        prose-ul:list-disc prose-ul:pl-4
+                        prose-ol:list-decimal prose-ol:pl-4
+                        prose-li:my-1
+                        prose-blockquote:border-l-4 prose-blockquote:border-purple-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:bg-gray-50 prose-blockquote:py-2 prose-blockquote:pr-2 prose-blockquote:rounded-r
+                        prose-hr:border-gray-200 prose-hr:my-4
+                        prose-code:hidden
+                      ">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div className="whitespace-pre-wrap text-base">{message.content}</div>
+                    )}
+                  </div>
+                )}
               </motion.div>
             ))}
           </AnimatePresence>
