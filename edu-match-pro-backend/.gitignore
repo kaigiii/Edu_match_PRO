@@ -1,0 +1,30 @@
+# Python 虛擬環境
+.venv/
+venv/
+env/
+
+# Python 快取
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 測試
+.pytest_cache/
+
+# 環境變數
+.env
+.env.local
+
+# 資料庫
+*.db
+*.sqlite3
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+

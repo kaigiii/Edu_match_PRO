@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-neutral-background text-neutral-900 font-sans antialiased;
+  }
+  
+  /* 標題層次樣式 */
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight;
+  }
+  
+  h2 {
+    @apply text-3xl md:text-4xl font-semibold mb-5 leading-tight;
+  }
+  
+  h3 {
+    @apply text-2xl md:text-3xl font-semibold mb-4 leading-tight;
+  }
+  
+  h4 {
+    @apply text-xl md:text-2xl font-medium mb-3 leading-snug;
+  }
+  
+  h5 {
+    @apply text-lg md:text-xl font-medium mb-2 leading-snug;
+  }
+  
+  h6 {
+    @apply text-base md:text-lg font-medium mb-2 leading-snug;
+  }
+  
+  /* 段落樣式 */
+  p {
+    @apply text-base leading-relaxed mb-4;
+  }
+  
+  /* 連結樣式 */
+  a {
+    @apply text-[#2A4D8C] hover:text-[#1E3A6E] transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scroll-snap-x {
+    scroll-snap-type: x mandatory;
+  }
+  
+  .scroll-snap-center {
+    scroll-snap-align: center;
+  }
+  
+  /* 動態氣泡動畫 */
+  @keyframes blob {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    25% {
+      transform: translate(20px, -20px) scale(1.1);
+    }
+    50% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    75% {
+      transform: translate(-10px, -10px) scale(1.05);
+    }
+  }
+  
+  .animate-blob {
+    animation: blob 10s infinite;
+  }
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+  
+  .animation-delay-1000 {
+    animation-delay: 1s;
+  }
+}

@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: edu_match_pro_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./edu-match-pro-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/edu_match_pro_db
+      SECRET_KEY: dev_secret_key
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+      AI_CORE_URL: "http://ai-core:8000"
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      ai-core:
+        condition: service_started
+
+  frontend:
+    build: ./edu-match-pro-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  ai-core:
+    build: ./app
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/edu_match_pro_db
+      GOOGLE_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

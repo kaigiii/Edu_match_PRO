@@ -1,0 +1,30 @@
+# 依賴套件
+node_modules/
+
+# 編譯輸出
+dist/
+dist-ssr/
+*.local
+
+# 環境變數
+.env
+.env.local
+.env.*.local
+
+# 日誌
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
