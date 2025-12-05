@@ -15,22 +15,43 @@
       path = basePath + path;
     }
     
-    // 重定向到 index.html，保留查詢參數和 hash
-    var redirectUrl = basePath + '/index.html' + 
-      (window.location.search || '') + 
-      (window.location.hash || '');
-    
-    // 如果當前路徑不是根路徑，將路徑資訊作為查詢參數傳遞
-    if (path !== basePath + '/' && path !== basePath + '/index.html') {
+    // 嘗試以 fetch 讀取真正的 index.html，並將其內容直接寫入當前 document。
+    // 好處：保持瀏覽器地址列為原始路徑 (例如 /Edu_match_PRO/needs)，不會被改寫成 index.html?redirect=...
+    // 若 fetch 失敗或不支援，才 fallback 到原本的 redirect 行為。
+    var redirectUrl = basePath + '/index.html' + (window.location.search || '') + (window.location.hash || '');
+
+    function fallbackRedirect() {
+      // 傳統 fallback（保留原本行為）
       var route = path.replace(basePath, '').replace(/^\//, '');
       if (route && route !== 'index.html') {
-        redirectUrl = basePath + '/index.html?redirect=' + encodeURIComponent(route) + 
+        redirectUrl = basePath + '/index.html?redirect=' + encodeURIComponent(route) +
           (window.location.search ? '&' + window.location.search.slice(1) : '') +
           (window.location.hash || '');
       }
+      window.location.replace(redirectUrl);
     }
-    
-    window.location.replace(redirectUrl);
+
+    // 只在支援 fetch 的環境嘗試保守載入
+    if (window.fetch) {
+      fetch(basePath + '/index.html')
+        .then(function(resp) {
+          if (!resp.ok) throw new Error('index fetch failed');
+          return resp.text();
+        })
+        .then(function(html) {
+          // 將 index.html 的內容寫入當前 document（不改變地址列）
+          document.open();
+          document.write(html);
+          document.close();
+        })
+        .catch(function() {
+          // 若讀取失敗則退回到舊有的 redirect 行為
+          fallbackRedirect();
+        });
+    } else {
+      // 不支援 fetch 則直接 fallback
+      fallbackRedirect();
+    }
   </script>
 </head>
 <body>
