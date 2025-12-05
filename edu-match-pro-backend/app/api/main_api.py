@@ -850,19 +850,31 @@ async def extract_parameters(
         # 清理 null 值，避免覆蓋前端已有的參數
         extracted_params = {k: v for k, v in extracted_params.items() if v is not None}
         print(f"[API] 清理後的參數: {extracted_params}")
-        
+
+        # 檢查 AI 是否直接回傳了原始回應（非結構化），若有則直接作為回覆
+        followup_question = None
+        # 支援 ai_service 返回的診斷 key：_raw_ai_response 或 _raw_ai_error 或 _fallback_reply
+        for raw_key in ("_raw_ai_response", "_raw_ai_error", "_fallback_reply"):
+            if raw_key in extracted_params:
+                followup_question = extracted_params.get(raw_key)
+                # 不要把 raw key 當作參數回傳給前端，清除它
+                extracted_params.pop(raw_key, None)
+                print(f"[API] 偵測到原始 AI 回應，將直接回覆使用者，內容前200字: {str(followup_question)[:200]}")
+                break
+
         # 檢查必要參數是否都已收集
         required_fields = ["resource_type", "target_counties"]
         is_params_complete = all(extracted_params.get(field) for field in required_fields)
         print(f"[API] 參數完整性: {is_params_complete}")
-        
-        # 生成追問問題或確認問題
-        print(f"[API] 開始生成追問問題...")
-        followup_question = ai_service.generate_followup_question(
-            extracted_params,
-            request.conversation_history
-        )
-        print(f"[API] 追問問題生成完成: {followup_question[:100] if followup_question else 'None'}...")
+
+        # 若尚未由 AI 直接提供回覆，則生成追問問題或確認問題
+        if followup_question is None:
+            print(f"[API] 開始生成追問問題...")
+            followup_question = ai_service.generate_followup_question(
+                extracted_params,
+                request.conversation_history
+            )
+            print(f"[API] 追問問題生成完成: {followup_question[:100] if followup_question else 'None'}...")
         
         response_data = AIExtractionResponse(
             extracted_params=extracted_params,

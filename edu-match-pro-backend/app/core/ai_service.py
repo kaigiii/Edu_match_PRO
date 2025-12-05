@@ -4,6 +4,7 @@ AI 服務模組
 """
 import os
 import json
+import re
 import time
 import logging
 import traceback
@@ -58,6 +59,8 @@ class AIService:
         
         self.current_key_index = 0
         self.model = None
+        # 優先模型，可由環境變量覆蓋
+        self.forced_model_name = os.environ.get('GEMINI_PREFERRED_MODEL', 'models/gemini-2.5-flash')
         
         # 嘗試使用第一個可用的 API 金鑰初始化
         self._initialize_with_current_key()
@@ -76,25 +79,39 @@ class AIService:
         
         # 選擇模型
         try:
+            # 取得所有支援 generateContent 的模型，並儲存為實例可用模型列表
             available_models = [
-                m.name for m in genai.list_models() 
-                if 'generateContent' in m.supported_generation_methods
+                m.name for m in genai.list_models()
+                if 'generateContent' in getattr(m, 'supported_generation_methods', [])
             ]
-            
-            preferred_models = ['models/gemini-2.0-flash-exp', 'models/gemini-1.5-flash', 'models/gemini-1.5-pro']
+            self.available_models = available_models
+
+            # 擴充預設偏好模型（優先使用 2.5 版本，再回落到 2.0）
+            preferred_models = [
+                'models/gemini-2.5-flash', 'models/gemini-2.5-pro',
+                'models/gemini-2.0-flash-exp', 'models/gemini-2.0-flash',
+                'models/gemini-1.5-flash', 'models/gemini-1.5-pro'
+            ]
+
             model_name = None
-            
-            for preferred in preferred_models:
-                if preferred in available_models:
-                    model_name = preferred
-                    break
-            
+
+            # 如果有外部強制模型名稱，且可用則優先使用
+            forced = getattr(self, 'forced_model_name', None)
+            if forced and forced in available_models:
+                model_name = forced
+
+            if not model_name:
+                for preferred in preferred_models:
+                    if preferred in available_models:
+                        model_name = preferred
+                        break
+
             if not model_name:
                 model_name = available_models[0] if available_models else 'models/gemini-pro'
-            
+
             self.model = genai.GenerativeModel(model_name)
             self.model_name = model_name
-            print(f"[AI服務] 使用API密鑰 #{self.current_key_index + 1}")
+            print(f"[AI服務] 使用API密鑰 #{self.current_key_index + 1}，模型: {self.model_name}")
         except Exception as e:
             print(f"[AI服務] API密鑰 #{self.current_key_index + 1} 初始化失敗: {e}")
             # 嘗試下一個密鑰
@@ -118,6 +135,35 @@ class AIService:
             return True
         except Exception as e:
             print(f"[AI服務] 切換失敗: {e}")
+            return False
+
+    def _switch_to_next_model(self) -> bool:
+        """切換到下一個可用模型（輪換 self.available_models）。"""
+        if not hasattr(self, 'available_models') or not self.available_models:
+            return False
+
+        try:
+            current = getattr(self, 'model_name', None)
+            idx = self.available_models.index(current) if current in self.available_models else -1
+        except Exception:
+            idx = -1
+
+        # 循環尋找下一個模型，若只有一個則回傳 False
+        if len(self.available_models) <= 1:
+            return False
+
+        next_idx = (idx + 1) % len(self.available_models)
+        if next_idx == idx:
+            return False
+
+        next_model = self.available_models[next_idx]
+        try:
+            self.model = genai.GenerativeModel(next_model)
+            self.model_name = next_model
+            print(f"[AI服務] 已切換模型到: {next_model}")
+            return True
+        except Exception as e:
+            print(f"[AI服務] 切換模型失敗: {e}")
             return False
     
     def _call_with_retry(self, prompt: str, max_retries: int = None) -> str:
@@ -163,7 +209,17 @@ class AIService:
                         time.sleep(sleep_time)
                         continue
                     else:
-                        raise ValueError(f"所有 {len(self.api_keys)} 個API密鑰都已達到限制或失敗: {error_msg}")
+                        # 如果所有金鑰都嘗試過，嘗試切換模型再重試（有機會某模型在某專案/金鑰上無配額）
+                        self.logger.info("[AI服務] 所有 API 金鑰已嘗試，嘗試切換模型後重試...")
+                        if self._switch_to_next_model():
+                            # 重置 key index 並從頭嘗試
+                            self.current_key_index = 0
+                            attempts = 0
+                            # 小睡一下再試
+                            time.sleep(1)
+                            continue
+                        else:
+                            raise ValueError(f"所有 {len(self.api_keys)} 個API密鑰都已達到限制或失敗: {error_msg}")
                 else:
                     # 其他類型的錯誤，直接拋出以便上層處理
                     self.logger.error(f"[AI服務] 無法處理的錯誤: {error_msg}")
@@ -216,13 +272,80 @@ class AIService:
 輸出JSON：
 """
         
+        def _extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
+            """嘗試從 text 中抽出 JSON 物件或陣列並解析返回 dict（失敗回傳 None）。"""
+            # 1) 移除常見 code block 標記
+            t = text.strip()
+            # 若包含 ```json ... ```，抽取中間部分
+            m = re.search(r"```json\s*(.*?)\s*```", t, re.S | re.I)
+            if m:
+                candidate = m.group(1).strip()
+                try:
+                    return json.loads(candidate)
+                except Exception:
+                    pass
+
+            # 2) 若包含 ``` ... ``` 無指定語法，抽取中間部分
+            m = re.search(r"```\s*(.*?)\s*```", t, re.S)
+            if m:
+                candidate = m.group(1).strip()
+                try:
+                    return json.loads(candidate)
+                except Exception:
+                    pass
+
+            # 3) 嘗試找出第一個 { ... } 的區塊（從第一個 { 到最後一個 }）
+            if '{' in t and '}' in t:
+                first = t.find('{')
+                last = t.rfind('}')
+                if first < last:
+                    candidate = t[first:last+1]
+                    # 嘗試修正常見單引號情況
+                    try:
+                        return json.loads(candidate)
+                    except Exception:
+                        # 嘗試用替換單引號為雙引號後解析（謹慎）
+                        cand2 = candidate.replace("\'", '"')
+                        try:
+                            return json.loads(cand2)
+                        except Exception:
+                            pass
+
+            # 4) 嘗試找出第一個 [ ... ] 的區塊
+            if '[' in t and ']' in t:
+                first = t.find('[')
+                last = t.rfind(']')
+                if first < last:
+                    candidate = t[first:last+1]
+                    try:
+                        parsed = json.loads(candidate)
+                        # 若是 list 轉成 dict under a key
+                        return {"_list_result": parsed}
+                    except Exception:
+                        pass
+
+            return None
+
         try:
             response_text = self._call_with_retry(prompt)
             cleaned = response_text.strip().replace("```json", "").replace("```", "").strip()
-            return json.loads(cleaned)
+
+            # 直接嘗試解析整個回應
+            try:
+                parsed = json.loads(cleaned)
+                return parsed
+            except Exception:
+                # 嘗試多種抽取策略
+                parsed = _extract_json_from_text(response_text)
+                if parsed is not None:
+                    return parsed
+
+            # 若所有解析策略都失敗，回傳包含原始回應以便前端/日誌診斷
+            print(f"[AI服務] 解析 JSON 失敗，將回傳原始回應供診斷: {response_text[:200]}")
+            return {"_raw_ai_response": response_text}
         except Exception as e:
             print(f"[AI服務] 參數提取失敗: {e}")
-            return {}
+            return {"_raw_ai_error": str(e)}
     
     def generate_followup_question(self, extracted_params: Dict[str, Any], conversation_history: List[Dict] = None) -> Optional[str]:
         """
