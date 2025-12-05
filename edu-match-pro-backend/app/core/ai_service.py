@@ -4,6 +4,9 @@ AI 服務模組
 """
 import os
 import json
+import time
+import logging
+import traceback
 from typing import Dict, Any, List, Optional
 import google.generativeai as genai
 from app.core.config import settings
@@ -59,7 +62,9 @@ class AIService:
         # 嘗試使用第一個可用的 API 金鑰初始化
         self._initialize_with_current_key()
         
-        print(f"[AI服務] 已初始化，使用模型: {self.model_name}，可用API密鑰數: {len(self.api_keys)}")
+        # 設定 logger
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"[AI服務] 已初始化，使用模型: {self.model_name}，可用API密鑰數: {len(self.api_keys)}")
     
     def _initialize_with_current_key(self):
         """使用當前索引的API密鑰初始化模型"""
@@ -131,7 +136,7 @@ class AIService:
         
         attempts = 0
         last_error = None
-        
+
         while attempts < max_retries:
             try:
                 response = self.model.generate_content(prompt)
@@ -139,21 +144,31 @@ class AIService:
             except Exception as e:
                 last_error = e
                 error_msg = str(e).lower()
-                
-                # 檢查是否為速率限制錯誤
-                if '429' in error_msg or 'quota' in error_msg or 'rate limit' in error_msg or 'resource exhausted' in error_msg:
-                    print(f"[AI服務] API密鑰 #{self.current_key_index + 1} 達到限制: {e}")
-                    
+
+                # 記錄完整錯誤以便除錯
+                tb = traceback.format_exc()
+                self.logger.warning(f"[AI服務] 調用失敗（key #{self.current_key_index + 1}）: {error_msg}")
+                self.logger.debug(tb)
+
+                # 如果是速率限制或配額、或金鑰被舉報洩露/授權錯誤，嘗試切換金鑰並重試
+                if any(k in error_msg for k in ['429', 'quota', 'rate limit', 'resource exhausted', 'rate_limited'] ) \
+                   or any(k in error_msg for k in ['403', 'permission denied', 'forbidden', 'leaked', 'reported as leaked', 'api key was reported']):
+                    self.logger.info(f"[AI服務] API密鑰 #{self.current_key_index + 1} 看似不可用（{error_msg[:200]}），嘗試切換金鑰...")
                     # 嘗試切換到下一個密鑰
                     if self._switch_to_next_key():
                         attempts += 1
+                        # 指數退避
+                        sleep_time = min(2 ** attempts, 30)
+                        self.logger.info(f"[AI服務] 等待 {sleep_time}s 後重試 (attempt {attempts}/{max_retries})")
+                        time.sleep(sleep_time)
                         continue
                     else:
-                        raise ValueError(f"所有 {len(self.api_keys)} 個API密鑰都已達到限制或失敗")
+                        raise ValueError(f"所有 {len(self.api_keys)} 個API密鑰都已達到限制或失敗: {error_msg}")
                 else:
-                    # 其他類型的錯誤，直接拋出
+                    # 其他類型的錯誤，直接拋出以便上層處理
+                    self.logger.error(f"[AI服務] 無法處理的錯誤: {error_msg}")
                     raise e
-        
+
         # 如果所有重試都失敗
         raise ValueError(f"API調用失敗，已嘗試 {attempts} 次: {last_error}")
     
