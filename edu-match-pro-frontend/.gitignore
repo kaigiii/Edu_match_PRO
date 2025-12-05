@@ -2,7 +2,7 @@
 node_modules/
 
 # 編譯輸出
-dist/
+# dist/
 dist-ssr/
 *.local
 

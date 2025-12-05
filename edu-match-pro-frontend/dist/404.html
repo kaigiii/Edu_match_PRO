@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智匯偏鄉 Edu match PRO - 教育資源媒合平台</title>
+  <script>
+    // GitHub Pages SPA 重定向
+    // 獲取當前路徑，保留 base path (Edu_match_PRO)
+    var path = window.location.pathname;
+    var basePath = '/Edu_match_PRO';
+    
+    // 如果路徑不包含 base path，添加它
+    if (!path.startsWith(basePath)) {
+      path = basePath + path;
+    }
+    
+    // 重定向到 index.html，保留查詢參數和 hash
+    var redirectUrl = basePath + '/index.html' + 
+      (window.location.search || '') + 
+      (window.location.hash || '');
+    
+    // 如果當前路徑不是根路徑，將路徑資訊作為查詢參數傳遞
+    if (path !== basePath + '/' && path !== basePath + '/index.html') {
+      var route = path.replace(basePath, '').replace(/^\//, '');
+      if (route && route !== 'index.html') {
+        redirectUrl = basePath + '/index.html?redirect=' + encodeURIComponent(route) + 
+          (window.location.search ? '&' + window.location.search.slice(1) : '') +
+          (window.location.hash || '');
+      }
+    }
+    
+    window.location.replace(redirectUrl);
+  </script>
+</head>
+<body>
+  <p>正在重定向到智匯偏鄉...</p>
+</body>
+</html>
