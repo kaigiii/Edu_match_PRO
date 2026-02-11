@@ -1,0 +1,11 @@
+# Python 虛擬環境
+.venv/
+venv/
+env/
+
+# macOS
+.DS_Store
+
+# 環境變數 (雖然子目錄有設定，但在根目錄也設定以防萬一)
+**/.env
+**/.env.*.local

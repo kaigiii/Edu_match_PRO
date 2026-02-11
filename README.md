@@ -236,7 +236,7 @@ python scripts/rebuild_demo_data.py --init-only  # 僅初始化 demo_users 表
 ```bash
 cd edu-match-pro-frontend
 npm run build
-# GitHub Actions 自動部署到 https://kaigiii.github.io/Edu-Match-PRO
+# GitHub Actions 自動部署到 https://kaigiii.github.io/Edu_match_PRO/
 ```
 
 ### 後端（Ngrok）
