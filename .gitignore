@@ -3,6 +3,11 @@
 venv/
 env/
 
+# Python 快取
+__pycache__/
+*.py[cod]
+*$py.class
+
 # macOS
 .DS_Store
 
