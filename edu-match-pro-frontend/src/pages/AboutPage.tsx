@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { 
-  HeartIcon, 
-  UserGroupIcon, 
-  LightBulbIcon, 
+import {
+  HeartIcon,
+  UserGroupIcon,
+  LightBulbIcon,
   TagIcon,
   TrophyIcon,
   GlobeAltIcon,
@@ -13,19 +13,19 @@ import {
 const AboutPage = () => {
   const teamMembers = [
     {
-      name: "范愷鈞",
+      name: "Role A",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
       avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-1.jpg`
     },
     {
-      name: "劉竑毅",
+      name: "Role B",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
       avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-2.jpg`
     },
     {
-      name: "史靖崴",
+      name: "Role C",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
       avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-3.jpg`
@@ -42,7 +42,7 @@ const AboutPage = () => {
     {
       icon: BoltIcon,
       title: "高效",
-      description: "AI 精準媒合，讓資源快速到達需要的地方", 
+      description: "AI 精準媒合，讓資源快速到達需要的地方",
       color: "green"
     },
     {
@@ -56,7 +56,7 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <motion.div 
+      <motion.div
         className="relative bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 text-white py-24"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -64,7 +64,7 @@ const AboutPage = () => {
       >
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/20 to-teal-900/20"></div>
         <div className="relative container mx-auto px-4 text-center">
-          <motion.h1 
+          <motion.h1
             className="text-5xl font-bold mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -72,7 +72,7 @@ const AboutPage = () => {
           >
             我們相信，科技的最大價值，在於創造公平。
           </motion.h1>
-          <motion.p 
+          <motion.p
             className="text-xl opacity-90 max-w-3xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -84,7 +84,7 @@ const AboutPage = () => {
       </motion.div>
 
       {/* Our Story Section */}
-      <motion.div 
+      <motion.div
         className="container mx-auto px-4 py-16"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -103,7 +103,7 @@ const AboutPage = () => {
               </div>
             </div>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -126,7 +126,7 @@ const AboutPage = () => {
       </motion.div>
 
       {/* Mission Section */}
-      <motion.div 
+      <motion.div
         className="bg-blue-600 text-white py-16"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -134,7 +134,7 @@ const AboutPage = () => {
       >
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <motion.h2 
+            <motion.h2
               className="text-3xl font-bold mb-4"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -142,7 +142,7 @@ const AboutPage = () => {
             >
               我們的使命
             </motion.h2>
-            <motion.p 
+            <motion.p
               className="text-xl opacity-90 max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -154,7 +154,7 @@ const AboutPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {missionValues.map((value, index) => (
-              <motion.div 
+              <motion.div
                 key={index}
                 className="text-center"
                 initial={{ opacity: 0, y: 20 }}
@@ -170,7 +170,7 @@ const AboutPage = () => {
             ))}
           </div>
 
-          <motion.div 
+          <motion.div
             className="mt-12 text-center"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -184,7 +184,7 @@ const AboutPage = () => {
       </motion.div>
 
       {/* Team Section */}
-      <motion.div 
+      <motion.div
         className="container mx-auto px-4 py-16"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -197,16 +197,16 @@ const AboutPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {teamMembers.map((member, index) => (
-            <motion.div 
+            <motion.div
               key={index}
               className="bg-white p-6 rounded-xl shadow-lg text-center hover:shadow-xl transition-shadow duration-200"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <img 
-                className="w-32 h-32 mx-auto rounded-full mb-4 object-cover" 
-                src={member.avatar} 
+              <img
+                className="w-32 h-32 mx-auto rounded-full mb-4 object-cover"
+                src={member.avatar}
                 alt={member.name}
                 onError={(e) => {
                   const target = e.currentTarget;
@@ -225,7 +225,7 @@ const AboutPage = () => {
       </motion.div>
 
       {/* Impact Section */}
-      <motion.div 
+      <motion.div
         className="bg-gray-900 text-white py-16"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -233,7 +233,7 @@ const AboutPage = () => {
       >
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <motion.h2 
+            <motion.h2
               className="text-3xl font-bold mb-4"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -241,7 +241,7 @@ const AboutPage = () => {
             >
               我們的影響力
             </motion.h2>
-            <motion.p 
+            <motion.p
               className="text-xl text-gray-300"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
