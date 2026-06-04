@@ -21,7 +21,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # 專案路徑
-PROJECT_ROOT="/Users/xiaojunjun/Coding/Project/Edu_match_pro"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/edu-match-pro-backend"
 FRONTEND_DIR="$PROJECT_ROOT/edu-match-pro-frontend"
 

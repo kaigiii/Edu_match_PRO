@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 一鍵重建 Demo 資料（完全整合版）
-自動處理所有依賴，包括 demo_users 表的初始化
+自動處理所有依賴，包括 demo 用戶的初始化
 
 支援兩種模式：
 1. 分配現有資料 (--assign)：快速分配資料庫中的現有 needs 和 donations
@@ -61,7 +61,7 @@ NEED_TEMPLATES = [
     },
     {
         "title": "體育器材更新",
-        "description": "體育課需要新的球類器材和運動設備，包括籃球、足球、羽球等，讓學生能夠安全地進行體育活動。現有器材已使用超過10年，存在安全隱憂。",
+        "description": "體育課需要新的球類器材 and 運動設備，包括籃球、足球、羽球等，讓學生能夠安全地進行體育活動。現有器材已使用超過10年，存在安全隱憂。",
         "category": "體育器材",
         "location": "台北市中山區",
         "student_count": 200,
@@ -300,46 +300,46 @@ DEMO_USERS_CONFIG = [
 
 
 async def check_demo_users_table(engine):
-    """檢查 demo_users 表是否存在且有資料"""
+    """檢查 user 表中是否有 demo 資料"""
     async with engine.begin() as conn:
         try:
-            result = await conn.execute(text("SELECT COUNT(*) FROM demo_users"))
+            result = await conn.execute(text('SELECT COUNT(*) FROM "user" WHERE is_demo = true'))
             count = result.scalar()
             return count > 0
         except Exception as e:
-            # 表可能不存在
-            print(f"  ⚠️  demo_users 表檢查失敗: {e}")
+            print(f"  ⚠️  demo 用戶檢查失敗: {e}")
             return False
 
 
 async def init_demo_users_table(engine):
-    """初始化 demo_users 和 demo_profiles 表"""
-    print("📋 步驟 0: 初始化 demo_users 表")
+    """直接在 user 和 profile 表中初始化 demo 資料"""
+    print("📋 步驟 0: 直接初始化 demo 用戶")
     print("-" * 70)
     
     async with engine.begin() as conn:
-        # 清空現有資料（如果有的話）
-        try:
-            await conn.execute(text("DELETE FROM demo_profiles"))
-            await conn.execute(text("DELETE FROM demo_users"))
-            print("  ✅ 清空現有 demo_users 資料")
-        except Exception:
-            pass
-        
         created_count = 0
         for user_data in DEMO_USERS_CONFIG:
             try:
-                # 生成 UUID
-                user_id = f"gen_random_uuid()"
+                # 檢查用戶是否已存在
+                result = await conn.execute(text('SELECT id FROM "user" WHERE email = :email'), {"email": user_data["email"]})
+                existing_user = result.fetchone()
+                if existing_user:
+                    user_id = str(existing_user[0])
+                    # 清理該用戶關聯的所有資料
+                    await conn.execute(text('DELETE FROM impact_story WHERE donation_id IN (SELECT id FROM donation WHERE company_id = :user_id)'), {"user_id": user_id})
+                    await conn.execute(text('DELETE FROM donation WHERE company_id = :user_id OR need_id IN (SELECT id FROM need WHERE school_id = :user_id)'), {"user_id": user_id})
+                    await conn.execute(text('DELETE FROM need WHERE school_id = :user_id'), {"user_id": user_id})
+                    await conn.execute(text('DELETE FROM profile WHERE user_id = :user_id'), {"user_id": user_id})
+                    await conn.execute(text('DELETE FROM "user" WHERE id = :user_id'), {"user_id": user_id})
                 
-                # 插入 demo_users
+                # 插入 user
                 result = await conn.execute(text("""
-                    INSERT INTO demo_users (
+                    INSERT INTO "user" (
                         id, created_at, updated_at, email, password, role,
-                        display_name, description, is_demo_only, is_active
+                        is_demo, display_name, description, is_active
                     ) VALUES (
-                        gen_random_uuid(), NOW(), NOW(), :email, :password, :role,
-                        :display_name, :description, true, true
+                        gen_random_uuid(), NOW(), NOW(), :email, :password, CAST(:role AS userrole),
+                        true, :display_name, :description, true
                     ) RETURNING id
                 """), {
                     "email": user_data["email"],
@@ -351,11 +351,11 @@ async def init_demo_users_table(engine):
                 
                 user_id = result.fetchone()[0]
                 
-                # 插入 demo_profiles
+                # 插入 profile
                 if user_data.get("profile"):
                     profile = user_data["profile"]
                     await conn.execute(text("""
-                        INSERT INTO demo_profiles (
+                        INSERT INTO profile (
                             id, created_at, updated_at, user_id,
                             organization_name, contact_person, position,
                             phone, address, bio
@@ -379,9 +379,9 @@ async def init_demo_users_table(engine):
                 
             except Exception as e:
                 print(f"  ❌ 創建失敗: {user_data['email']} - {e}")
+                raise e
         
         print(f"\n  總共創建了 {created_count} 個 demo 用戶")
-    
     print()
 
 
@@ -392,11 +392,7 @@ async def clean_demo_data(engine):
     
     async with engine.begin() as conn:
         # 找出現有的 demo 用戶 ID
-        result = await conn.execute(text("""
-            SELECT id FROM "user" WHERE email IN (
-                SELECT email FROM demo_users
-            )
-        """))
+        result = await conn.execute(text('SELECT id FROM "user" WHERE is_demo = true'))
         existing_demo_ids = [str(row[0]) for row in result]
         
         if existing_demo_ids:
@@ -405,14 +401,14 @@ async def clean_demo_data(engine):
             # 找一個非 demo 的學校和企業用戶作為臨時接收者
             result = await conn.execute(text("""
                 SELECT id FROM "user" 
-                WHERE role = 'school' AND email NOT IN (SELECT email FROM demo_users)
+                WHERE role = 'school' AND is_demo = false
                 LIMIT 1
             """))
             temp_school = result.scalar()
             
             result = await conn.execute(text("""
                 SELECT id FROM "user" 
-                WHERE role = 'company' AND email NOT IN (SELECT email FROM demo_users)
+                WHERE role = 'company' AND is_demo = false
                 LIMIT 1
             """))
             temp_company = result.scalar()
@@ -457,17 +453,11 @@ async def clean_demo_data(engine):
                         print(f"  ✅ 刪除了 {result.rowcount} 個 donations")
             
             # 刪除 profiles
-            result = await conn.execute(text("""
-                DELETE FROM profile WHERE user_id IN (
-                    SELECT id FROM "user" WHERE email IN (SELECT email FROM demo_users)
-                )
-            """))
+            result = await conn.execute(text('DELETE FROM profile WHERE user_id = ANY(:user_ids)'), {"user_ids": existing_demo_ids})
             print(f"  ✅ 刪除了 {result.rowcount} 個 profiles")
             
             # 刪除用戶
-            result = await conn.execute(text("""
-                DELETE FROM "user" WHERE email IN (SELECT email FROM demo_users)
-            """))
+            result = await conn.execute(text('DELETE FROM "user" WHERE id = ANY(:user_ids)'), {"user_ids": existing_demo_ids})
             print(f"  ✅ 刪除了 {result.rowcount} 個用戶")
         else:
             print("  ℹ️  沒有找到現有 demo 用戶")
@@ -476,60 +466,37 @@ async def clean_demo_data(engine):
 
 
 async def recreate_demo_users(engine):
-    """步驟 2: 從 demo_users 重建用戶"""
-    print("📋 步驟 2: 從 demo_users 重建用戶")
+    """步驟 2: 載入並返回現有 demo 用戶"""
+    print("📋 步驟 2: 載入 demo 用戶")
     print("-" * 70)
     
     async with engine.begin() as conn:
-        result = await conn.execute(text("""
-            INSERT INTO "user" (id, created_at, updated_at, email, password, role)
-            SELECT id, created_at, updated_at, email, password, role::userrole
-            FROM demo_users
-        """))
-        print(f"  ✅ 插入了 {result.rowcount} 個 demo 用戶到 user 表")
-        
         # 查詢 demo 用戶信息
         result = await conn.execute(text("""
             SELECT id, email, role, display_name
-            FROM demo_users
+            FROM "user"
+            WHERE is_demo = true
             ORDER BY role, email
         """))
         
         demo_users = {'school': [], 'company': []}
         print("\n  Demo 用戶列表:")
         for row in result:
-            demo_users[row[2]].append({
+            role_str = str(row[2].value if hasattr(row[2], 'value') else row[2])
+            demo_users[role_str].append({
                 'id': str(row[0]), 
                 'email': row[1],
                 'display_name': row[3]
             })
-            print(f"    • {row[2]}: {row[1]} ({row[3]})")
+            print(f"    • {role_str}: {row[1]} ({row[3]})")
     
     print()
     return demo_users
 
 
 async def sync_demo_profiles(engine):
-    """步驟 3: 同步 demo profiles"""
-    print("📋 步驟 3: 同步 demo profiles")
-    print("-" * 70)
-    
-    async with engine.begin() as conn:
-        result = await conn.execute(text("""
-            INSERT INTO profile (
-                id, created_at, updated_at, user_id, 
-                organization_name, contact_person, position, 
-                phone, address, bio, avatar_url, tax_id
-            )
-            SELECT 
-                id, created_at, updated_at, user_id,
-                organization_name, contact_person, position,
-                phone, address, bio, avatar_url, NULL as tax_id
-            FROM demo_profiles
-        """))
-        print(f"  ✅ 同步了 {result.rowcount} 個 profiles")
-    
-    print()
+    """步驟 3: 同步 demo profiles（已合併，此處為 no-op）"""
+    pass
 
 
 async def assign_existing_needs(engine, demo_users):
@@ -750,7 +717,7 @@ async def verify_results(engine, demo_users):
     print("-" * 70)
     
     async with engine.begin() as conn:
-        # 驗證用戶和 profile
+        # 驗證用戶 and profile
         result = await conn.execute(text("""
             SELECT 
                 u.email,
@@ -759,7 +726,7 @@ async def verify_results(engine, demo_users):
                 CASE WHEN p.id IS NOT NULL THEN '✓' ELSE '✗' END as has_profile
             FROM "user" u
             LEFT JOIN profile p ON u.id = p.user_id
-            WHERE u.email LIKE '%demo%'
+            WHERE u.is_demo = true
             ORDER BY u.role, u.email
         """))
         
@@ -792,7 +759,8 @@ async def verify_results(engine, demo_users):
             """), {'user_id': user['id']})
             print(f"    • {user['display_name']}:")
             for row in result:
-                print(f"       - {row[0]}: {row[1]} 筆")
+                status_str = str(row[0].value if hasattr(row[0], 'value') else row[0])
+                print(f"       - {status_str}: {row[1]} 筆")
         
         # 驗證 impact stories
         result = await conn.execute(text("""
@@ -800,7 +768,7 @@ async def verify_results(engine, demo_users):
             FROM impact_story i
             JOIN donation d ON i.donation_id = d.id
             JOIN "user" u ON d.company_id = u.id
-            WHERE u.email LIKE '%demo%'
+            WHERE u.is_demo = true
         """))
         story_count = result.scalar()
         print(f"\n  Impact Stories: {story_count} 個")
@@ -814,7 +782,7 @@ async def rebuild_demo_data(mode='generate', init_only=False):
         mode: 'assign' 或 'generate'
             - 'assign': 分配現有資料（快速）
             - 'generate': 創建新資料（豐富，推薦）
-        init_only: 僅初始化 demo_users 表
+            - init_only: 僅初始化 demo 資料
     """
     engine = create_async_engine(settings.database_url)
     
@@ -822,24 +790,24 @@ async def rebuild_demo_data(mode='generate', init_only=False):
     
     print("=" * 70)
     if init_only:
-        print("🔧 初始化 demo_users 表")
+        print("🔧 初始化 demo 用戶")
     else:
         print(f"🔄 開始重建 Demo 資料 ({mode_name})")
     print("=" * 70)
     print()
     
     try:
-        # 步驟 0: 檢查並初始化 demo_users 表
+        # 步驟 0: 檢查並初始化 demo 用戶
         has_demo_users = await check_demo_users_table(engine)
         
         if not has_demo_users or init_only:
-            print("  ℹ️  demo_users 表為空或需要初始化")
+            print("  ℹ️  demo 用戶未初始化或需要初始化")
             await init_demo_users_table(engine)
             
             if init_only:
                 print()
                 print("=" * 70)
-                print("🎉 demo_users 表初始化完成！")
+                print("🎉 demo 用戶初始化完成！")
                 print("=" * 70)
                 print()
                 print("📱 Demo 用戶帳號:")
@@ -848,30 +816,32 @@ async def rebuild_demo_data(mode='generate', init_only=False):
                 print()
                 return
         else:
-            print("  ✓ demo_users 表已存在資料，跳過初始化")
+            print("  ✓ demo 用戶已存在，跳過初始化")
             print()
         
-        # 步驟 1: 清理
-        await clean_demo_data(engine)
-        
-        # 步驟 2: 重建用戶
-        demo_users = await recreate_demo_users(engine)
-        
-        # 步驟 3: 同步 profiles
-        await sync_demo_profiles(engine)
-        
-        # 步驟 4 & 5: 根據模式選擇不同的資料處理方式
-        if mode == 'generate':
-            # 模式 B: 創建新資料（豐富）
-            needs = await create_new_needs(demo_users)
-            await create_new_donations(demo_users, needs)
-        else:
-            # 模式 A: 分配現有資料（快速）
-            await assign_existing_needs(engine, demo_users)
-            await assign_existing_donations(engine, demo_users)
-        
-        # 步驟 6: 驗證
-        await verify_results(engine, demo_users)
+        if not init_only:
+            # 步驟 1: 清理
+            await clean_demo_data(engine)
+            
+            # 步驟 2: 重建用戶
+            await init_demo_users_table(engine)
+            demo_users = await recreate_demo_users(engine)
+            
+            # 步驟 3: 同步 profiles
+            await sync_demo_profiles(engine)
+            
+            # 步驟 4 & 5: 根據模式選擇不同的資料處理方式
+            if mode == 'generate':
+                # 模式 B: 創建新資料（豐富）
+                needs = await create_new_needs(demo_users)
+                await create_new_donations(demo_users, needs)
+            else:
+                # 模式 A: 分配現有資料（快速）
+                await assign_existing_needs(engine, demo_users)
+                await assign_existing_donations(engine, demo_users)
+            
+            # 步驟 6: 驗證
+            await verify_results(engine, demo_users)
         
     finally:
         await engine.dispose()

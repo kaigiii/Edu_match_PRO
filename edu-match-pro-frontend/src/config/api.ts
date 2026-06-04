@@ -18,7 +18,7 @@ const getBaseURL = (): string => {
   
   // 2. GitHub Pages 生產環境使用 ngrok 後端
   if (isGitHubPages) {
-    return 'https://nonexpendable-superinquisitive-harmony.ngrok-free.dev';
+    return 'https://charlesetta-indignant-horacio.ngrok-free.dev';
   }
   
   // 3. 本地開發環境使用 localhost 後端
