@@ -4,7 +4,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   userRole: 'school' | 'company' | null;
   isDemo: boolean;
-  login: (role: 'school' | 'company') => void;
+  login: (role: 'school' | 'company', isDemoUser?: boolean, tokenValue?: string) => void;
   logout: () => void;
   token: string | null;
 }
@@ -12,28 +12,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<'school' | 'company' | null>(null);
-  const [isDemo, setIsDemo] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('authToken'));
+  const [userRole, setUserRole] = useState<'school' | 'company' | null>(() => localStorage.getItem('userRole') as 'school' | 'company' | null);
+  const [isDemo, setIsDemo] = useState<boolean>(() => localStorage.getItem('isDemo') === 'true');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!localStorage.getItem('authToken'));
 
-  // 檢查本地存儲的認證狀態
-  useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-    const storedRole = localStorage.getItem('userRole') as 'school' | 'company' | null;
-    const storedIsDemo = localStorage.getItem('isDemo') === 'true';
-    
-    if (storedToken && storedRole) {
-      setToken(storedToken);
-      setUserRole(storedRole);
-      setIsDemo(storedIsDemo);
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  const login = (role: 'school' | 'company') => {
+  const login = (role: 'school' | 'company', isDemoUser: boolean = false, tokenValue: string | null = null) => {
     setIsAuthenticated(true);
     setUserRole(role);
+    setIsDemo(isDemoUser);
+    if (tokenValue) {
+      setToken(tokenValue);
+    }
   };
 
   const logout = () => {

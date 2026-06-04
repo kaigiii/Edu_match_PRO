@@ -44,7 +44,7 @@ const LoginPage = () => {
         localStorage.setItem('isDemo', 'false');
         
         // 更新認證狀態
-        login(response.user.role);
+        login(response.user.role, false, response.token);
         
         // 根據角色跳轉到對應的儀表板
         const dashboardPath = response.user.role === 'company' ? '/dashboard/company' : '/dashboard/school';
@@ -73,7 +73,7 @@ const LoginPage = () => {
         localStorage.setItem('isDemo', 'true');
         
         // 更新認證狀態
-        login(response.user.role);
+        login(response.user.role, true, response.token);
         
         // 根據角色跳轉到對應的儀表板
         const dashboardPath = response.user.role === 'company' ? '/dashboard/company' : '/dashboard/school';

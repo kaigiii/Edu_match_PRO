@@ -23,7 +23,7 @@ async def create_need(session: AsyncSession, need_in: NeedCreate, school_id: uui
         raise ValidationError("學生數量必須大於 0")
     
     # 創建需求數據
-    need_data = need_in.dict()
+    need_data = need_in.model_dump()
     need_data['school_id'] = school_id
     need_data['status'] = NeedStatus.active  # 設置默認狀態
     
@@ -48,7 +48,7 @@ async def get_needs_by_school(session: AsyncSession, school_id: uuid.UUID, skip:
 
 async def get_all_needs(session: AsyncSession, skip: int = 0, limit: int = 100) -> List[Need]:
     """
-    獲取所有需求（排除演示用戶創建的需求）
+    獲取所有需求（優先返回真實用戶需求，若無則返回演示需求）
     
     現在使用統一的 User 表，通過 is_demo 字段區分演示用戶
     """
@@ -57,29 +57,32 @@ async def get_all_needs(session: AsyncSession, skip: int = 0, limit: int = 100) 
     
     # 獲取所有演示用戶的 ID
     demo_users_result = await session.execute(
-        select(User.id).where(User.is_demo == True, User.is_active == True)
+        select(User).where(User.is_demo == True, User.is_active == True)  # type: ignore[arg-type]
     )
-    demo_user_ids = [user_id[0] for user_id in demo_users_result.fetchall()]
+    demo_user_ids = [user.id for user in demo_users_result.scalars().all() if user.id is not None]
     
     # 查詢所有需求，但排除演示用戶創建的需求
     if demo_user_ids:
         result = await session.execute(
             select(Need)
-            .where(not_(Need.school_id.in_(demo_user_ids)))
+            .where(not_(Need.school_id.in_(demo_user_ids)))  # type: ignore[attr-defined]
             .offset(skip)
             .limit(limit)
-            .order_by(Need.created_at.desc())
+            .order_by(Need.created_at.desc())  # type: ignore[attr-defined]
         )
-    else:
-        # 如果沒有演示用戶，返回所有需求
-        result = await session.execute(
-            select(Need)
-            .offset(skip)
-            .limit(limit)
-            .order_by(Need.created_at.desc())
-        )
+        real_needs = result.scalars().all()
+        if real_needs:
+            return list(real_needs)
+            
+    # 如果沒有真實用戶的需求，或者沒有演示用戶，返回所有需求（包含演示需求）
+    result = await session.execute(
+        select(Need)
+        .offset(skip)
+        .limit(limit)
+        .order_by(Need.created_at.desc())  # type: ignore[attr-defined]
+    )
     
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def get_all_needs_for_companies(session: AsyncSession, skip: int = 0, limit: int = 100) -> List[Need]:
@@ -91,10 +94,10 @@ async def get_all_needs_for_companies(session: AsyncSession, skip: int = 0, limi
         select(Need)
         .offset(skip)
         .limit(limit)
-        .order_by(Need.created_at.desc())
+        .order_by(Need.created_at.desc())  # type: ignore[attr-defined]
     )
     
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def update_need(session: AsyncSession, db_need: Need, need_in: NeedUpdate) -> Need:
@@ -105,5 +108,7 @@ async def update_need(session: AsyncSession, db_need: Need, need_in: NeedUpdate)
 
 async def delete_need(session: AsyncSession, db_need: Need) -> None:
     """刪除需求"""
+    if db_need.id is None:
+        raise ValidationError("無法刪除未儲存的需求")
     # 使用 BaseCRUD 的 delete 方法
     await need_crud.delete(session, db_need.id)
