@@ -168,7 +168,7 @@ echo ""
 echo -e "${BLUE}🌍 前端部署：${NC}"
 echo ""
 echo -e "  ${GREEN}GitHub Pages:${NC}"
-echo -e "    🌐 https://kaigiii.github.io/Edu_match_pro_EC/"
+echo -e "    🌐 https://kaigiii.github.io/Edu_match_PRO/"
 echo ""
 
 echo -e "${BLUE}📊 Ngrok 管理界面：${NC}"

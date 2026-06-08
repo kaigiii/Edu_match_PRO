@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     // @ts-ignore
-    base: isProduction ? (process.env.VITE_BASE_PATH || '/Edu_match_pro_EC/') : '/',
+    base: isProduction ? (process.env.VITE_BASE_PATH || '/Edu_match_PRO/') : '/',
   
   // 開發伺服器配置
   server: {
