@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Link } from 'react-router-dom';
+import { getImagePath } from '../../utils/imageUtils';
 
 // 註冊 ScrollTrigger 插件
 gsap.registerPlugin(ScrollTrigger);
@@ -89,7 +90,7 @@ const CtaSection = () => {
               className="bg-gradient-to-br from-brand-blue to-brand-orange rounded-lg overflow-hidden relative group"
             >
               <img
-                src={`${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/impact-stories/background-wall/${String(i + 1).padStart(2, '0')}.jpg`}
+                src={getImagePath(`/images/impact-stories/background-wall/${String(i + 1).padStart(2, '0')}.jpg`)}
                 alt={`影響力故事 ${i + 1}`}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"

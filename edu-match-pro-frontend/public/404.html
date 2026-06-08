@@ -6,9 +6,10 @@
   <title>智匯偏鄉 Edu match PRO - 教育資源媒合平台</title>
   <script>
     // GitHub Pages SPA 重定向
-    // 獲取當前路徑，保留 base path (Edu_match_PRO)
+    // 獲取當前路徑，自動從網址路徑判斷儲存庫名稱（basePath）
     var path = window.location.pathname;
-    var basePath = '/Edu_match_PRO';
+    var pathSegments = path.split('/');
+    var basePath = '/' + (pathSegments[1] || 'Edu_match_pro_EC');
     
     // 如果路徑不包含 base path，添加它
     if (!path.startsWith(basePath)) {

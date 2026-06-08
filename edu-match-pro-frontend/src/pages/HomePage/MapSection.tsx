@@ -4,6 +4,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import TaiwanMap, { TaiwanMapRef } from '../../components/TaiwanMap';
+import { getImagePath } from '../../utils/imageUtils';
 import { HomePageAnimations } from './animation.config';
 import { apiService } from '../../services/apiService';
 import { PlatformStats } from '../../types';
@@ -122,7 +123,7 @@ const MapSection = () => {
       ref={sectionRef} 
       className="min-h-screen relative py-20"
         style={{
-          backgroundImage: `url("${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/bg-1.jpg")`,
+          backgroundImage: `url("${getImagePath('/images/bg-1.jpg')}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'

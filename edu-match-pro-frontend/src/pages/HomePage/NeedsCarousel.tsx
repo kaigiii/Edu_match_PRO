@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import { getImagePath } from '../../utils/imageUtils';
 import NeedCard from '../../components/NeedCard';
 import type { SchoolNeed } from '../../types';
 
@@ -94,7 +95,7 @@ const NeedsCarousel = ({ needs }: NeedsCarouselProps) => {
         ref={sectionRef} 
         className="min-h-[80vh] relative py-16 overflow-hidden"
         style={{
-          backgroundImage: `url("${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/bg-4.jpg")`,
+          backgroundImage: `url("${getImagePath('/images/bg-4.jpg')}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
@@ -112,7 +113,7 @@ const NeedsCarousel = ({ needs }: NeedsCarouselProps) => {
       ref={sectionRef} 
       className="min-h-[80vh] relative py-16 overflow-hidden"
       style={{
-        backgroundImage: `url("${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/bg-4.jpg")`,
+        backgroundImage: `url("${getImagePath('/images/bg-4.jpg')}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'

@@ -4,7 +4,8 @@
 
 // 獲取基礎路徑
 const getBasePath = (): string => {
-  return import.meta.env.PROD ? '/Edu_match_PRO' : '';
+  const base = import.meta.env.BASE_URL || '/';
+  return base === '/' ? '' : base.replace(/\/$/, '');
 };
 
 /**

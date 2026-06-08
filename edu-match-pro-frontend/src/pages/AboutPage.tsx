@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { getImagePath } from '../utils/imageUtils';
 import {
   HeartIcon,
   UserGroupIcon,
@@ -16,19 +17,19 @@ const AboutPage = () => {
       name: "Role A",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
-      avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-1.jpg`
+      avatar: getImagePath('/images/team/member-1.jpg')
     },
     {
       name: "Role B",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
-      avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-2.jpg`
+      avatar: getImagePath('/images/team/member-2.jpg')
     },
     {
       name: "Role C",
       role: "角色與描述留白",
       description: "致力於用科技改變教育現況",
-      avatar: `${import.meta.env.PROD ? '/Edu_match_PRO' : ''}/images/team/member-3.jpg`
+      avatar: getImagePath('/images/team/member-3.jpg')
     }
   ];
 
