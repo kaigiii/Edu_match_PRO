@@ -9,7 +9,7 @@
 # 
 # 前置條件：
 #   - 必須先運行 ./start_local.sh 啟動本地服務
-#   - localhost:3001 (後端) 必須正在運行
+#   - localhost:13102 (後端) 必須正在運行
 # 
 # 使用方法：
 #   ./start_ngrok.sh
@@ -67,7 +67,7 @@ echo -e "${BLUE}🔍 檢查本地服務狀態...${NC}"
 echo ""
 
 # 檢查後端
-if ! curl -s http://localhost:3001/health > /dev/null 2>&1; then
+if ! curl -s http://localhost:13102/health > /dev/null 2>&1; then
     echo -e "${RED}❌ 錯誤：後端服務未運行${NC}"
     echo ""
     echo "請先運行本地服務："
@@ -75,7 +75,7 @@ if ! curl -s http://localhost:3001/health > /dev/null 2>&1; then
     echo ""
     exit 1
 fi
-echo -e "${GREEN}✅ 後端服務運行正常 (localhost:3001)${NC}"
+echo -e "${GREEN}✅ 後端服務運行正常 (localhost:13102)${NC}"
 echo ""
 
 # 檢查 ngrok 是否安裝
@@ -105,8 +105,8 @@ echo -e "${BLUE}🌐 啟動後端 Ngrok 隧道...${NC}"
 echo ""
 
 # 啟動後端 ngrok
-echo "   啟動後端隧道 (端口 3001)..."
-ngrok http 3001 \
+echo "   啟動後端隧道 (端口 13102)..."
+ngrok http 13102 \
     --authtoken="$NGROK_BACKEND_TOKEN" \
     --log=stdout \
     --log-level=info \
@@ -161,8 +161,8 @@ fi
 echo -e "${BLUE}🖥️  本地訪問地址：${NC}"
 echo ""
 echo -e "  ${GREEN}後端 API (本地):${NC}"
-echo -e "    🌐 http://localhost:3001"
-echo -e "    📚 API 文檔：http://localhost:3001/docs"
+echo -e "    🌐 http://localhost:13102"
+echo -e "    📚 API 文檔：http://localhost:13102/docs"
 echo ""
 
 echo -e "${BLUE}🌍 前端部署：${NC}"

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     
     # CORS 配置優化
     # 本地開發 + GitHub Pages + ngrok 後端
-    cors_origins: Union[list[str], str] = "http://localhost:5173,http://127.0.0.1:5173,https://kaigiii.github.io,https://charlesetta-indignant-horacio.ngrok-free.dev"
+    cors_origins: Union[list[str], str] = "http://localhost:13101,http://127.0.0.1:13101,https://kaigiii.github.io,https://charlesetta-indignant-horacio.ngrok-free.dev"
     
     @field_validator('cors_origins', mode='before')
     @classmethod

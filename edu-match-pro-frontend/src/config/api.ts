@@ -23,11 +23,11 @@ const getBaseURL = (): string => {
   
   // 3. 本地開發環境使用 localhost 後端
   if (isDevelopment) {
-    return 'http://localhost:3001';
+    return 'http://localhost:13102';
   }
   
   // 4. 其他情況默認使用 localhost（安全起見）
-  return 'http://localhost:3001';
+  return 'http://localhost:13102';
 };
 
 // API 基礎 URL 配置

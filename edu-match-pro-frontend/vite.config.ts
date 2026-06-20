@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
     // 允許局域網訪問
     host: '0.0.0.0', 
     // 開發伺服器端口
-    port: 5173,
+    port: 13101,
   },
 
   build: {

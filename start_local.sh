@@ -4,10 +4,10 @@
 # 本地開發啟動腳本
 # ============================================================================
 # 功能：
-#   - 啟動後端服務 (uvicorn on port 3001)
-#   - 啟動前端開發伺服器 (vite dev on port 5173)
+#   - 啟動後端服務 (uvicorn on port 13102)
+#   - 啟動前端開發伺服器 (vite dev on port 13101)
 # 
-# 用途：本地開發，前端連接 localhost:3001
+# 用途：本地開發，前端連接 localhost:13102
 # 
 # 使用方法：
 #   ./start_local.sh
@@ -47,8 +47,8 @@ cleanup() {
     fi
     
     # 清理連接埠
-    lsof -ti:3001 | xargs kill -9 2>/dev/null || true
-    lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+    lsof -ti:13102 | xargs kill -9 2>/dev/null || true
+    lsof -ti:13101 | xargs kill -9 2>/dev/null || true
     
     echo -e "${GREEN}✅ 所有服務已停止${NC}"
     exit 0
@@ -71,15 +71,15 @@ echo ""
 
 # 檢查並清理連接埠
 echo -e "${BLUE}🔍 檢查連接埠佔用...${NC}"
-if lsof -ti:3001 > /dev/null 2>&1; then
-    echo "   連接埠 3001 被佔用，正在清理..."
-    lsof -ti:3001 | xargs kill -9 2>/dev/null || true
+if lsof -ti:13102 > /dev/null 2>&1; then
+    echo "   連接埠 13102 被佔用，正在清理..."
+    lsof -ti:13102 | xargs kill -9 2>/dev/null || true
     sleep 1
 fi
 
-if lsof -ti:5173 > /dev/null 2>&1; then
-    echo "   連接埠 5173 被佔用，正在清理..."
-    lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+if lsof -ti:13101 > /dev/null 2>&1; then
+    echo "   連接埠 13101 被佔用，正在清理..."
+    lsof -ti:13101 | xargs kill -9 2>/dev/null || true
     sleep 1
 fi
 echo -e "${GREEN}✅ 連接埠清理完成${NC}"
@@ -102,10 +102,10 @@ fi
 
 source .venv/bin/activate
 
-echo "   啟動 uvicorn (連接埠 3001)..."
+echo "   啟動 uvicorn (連接埠 13102)..."
 uvicorn main:app \
     --host 0.0.0.0 \
-    --port 3001 \
+    --port 13102 \
     --reload \
     --log-level info \
     > /tmp/backend.log 2>&1 &
@@ -118,7 +118,7 @@ echo "   ⏳ 等待後端啟動..."
 sleep 3
 
 # 驗證後端
-if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+if curl -s http://localhost:13102/health > /dev/null 2>&1; then
     echo -e "${GREEN}   ✅ 後端健康檢查通過${NC}"
 else
     echo -e "${YELLOW}   ⚠️  後端可能需要更長時間啟動${NC}"
@@ -139,7 +139,7 @@ if [ ! -d "node_modules" ]; then
     exit 1
 fi
 
-echo "   啟動 vite dev (連接埠 5173)..."
+echo "   啟動 vite dev (連接埠 13101)..."
 npm run dev > /tmp/frontend-dev.log 2>&1 &
 FRONTEND_PID=$!
 echo -e "${GREEN}   ✅ 前端已啟動 (PID: $FRONTEND_PID)${NC}"
@@ -149,7 +149,7 @@ echo "   ⏳ 等待前端啟動..."
 sleep 5
 
 # 驗證前端
-if curl -s http://localhost:5173 > /dev/null 2>&1; then
+if curl -s http://localhost:13101 > /dev/null 2>&1; then
     echo -e "${GREEN}   ✅ 前端健康檢查通過${NC}"
 else
     echo -e "${YELLOW}   ⚠️  前端可能需要更長時間啟動${NC}"
@@ -167,11 +167,11 @@ echo ""
 echo -e "${BLUE}📋 服務資訊：${NC}"
 echo ""
 echo -e "  ${GREEN}前端開發伺服器：${NC}"
-echo -e "    🌐 http://localhost:5173"
+echo -e "    🌐 http://localhost:13101"
 echo ""
 echo -e "  ${GREEN}後端 API 服務：${NC}"
-echo -e "    🌐 http://localhost:3001"
-echo -e "    📚 API 文件：http://localhost:3001/docs"
+echo -e "    🌐 http://localhost:13102"
+echo -e "    📚 API 文件：http://localhost:13102/docs"
 echo ""
 echo -e "${BLUE}📊 日誌檔案：${NC}"
 echo ""
@@ -181,7 +181,7 @@ echo ""
 echo -e "${BLUE}💡 提示：${NC}"
 echo ""
 echo -e "  • 前端使用開發模式，支援熱重載"
-echo -e "  • 前端自動連接到 localhost:3001"
+echo -e "  • 前端自動連接到 localhost:13102"
 echo -e "  • 按 ${YELLOW}Ctrl+C${NC} 停止所有服務"
 echo -e "  • 如需外部存取，請執行：${YELLOW}./start_ngrok.sh${NC}"
 echo ""

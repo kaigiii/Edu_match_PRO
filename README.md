@@ -73,14 +73,14 @@ DEMO_COMPANY_PASSWORD=demo_company_2024
 DEMO_RURAL_SCHOOL_PASSWORD=demo_rural_2024
 
 # CORS
-CORS_ORIGINS=http://localhost:5173,https://kaigiii.github.io
+CORS_ORIGINS=http://localhost:13101,https://kaigiii.github.io
 ```
 
 ### 前端環境變數（可選）
 
 ```bash
 # .env.development
-VITE_API_BASE_URL=http://localhost:3001
+VITE_API_BASE_URL=http://localhost:13102
 
 # .env.production
 VITE_API_BASE_URL=https://your-ngrok-url.ngrok-free.dev
@@ -98,9 +98,9 @@ VITE_API_BASE_URL=https://your-ngrok-url.ngrok-free.dev
 ```
 
 啟動後：
-- **後端 API**: http://localhost:3001
-- **API 文檔**: http://localhost:3001/docs
-- **前端應用**: http://localhost:5173
+- **後端 API**: http://localhost:13102
+- **API 文檔**: http://localhost:13102/docs
+- **前端應用**: http://localhost:13101
 
 ### 2. 啟動 Ngrok 隧道（公網訪問）
 
@@ -134,7 +134,7 @@ pip install -r requirements.txt
 alembic upgrade head
 
 # 啟動服務
-uvicorn main:app --host 0.0.0.0 --port 3001 --reload
+uvicorn main:app --host 0.0.0.0 --port 13102 --reload
 ```
 
 ### 前端
@@ -192,7 +192,7 @@ npm run build
 
 🔒 = 需要 JWT 認證
 
-完整 API 文檔：http://localhost:3001/docs
+完整 API 文檔：http://localhost:13102/docs
 
 ---
 
@@ -294,7 +294,7 @@ npm run lint             # ESLint 檢查
 檢查 `edu-match-pro-backend/app/core/config.py` 的 `CORS_ORIGINS` 設定
 
 ### 前端無法連接後端
-1. 確認後端已啟動：http://localhost:3001/health
+1. 確認後端已啟動：http://localhost:13102/health
 2. 檢查前端 API 配置：`src/config/api.ts`
 
 ### 資料庫連接失敗
@@ -311,5 +311,5 @@ Ngrok 免費版 URL 會定期過期，需手動更新兩個文件（見「部署
 
 - **前端配置**: `edu-match-pro-frontend/src/config/api.ts`
 - **後端配置**: `edu-match-pro-backend/app/core/config.py`
-- **API 文檔**: http://localhost:3001/docs （本地）
+- **API 文檔**: http://localhost:13102/docs （本地）
 
